@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://styloflow.dev/schemas/entity-types.schema.json",
+  "title": "StyloFlow Entity Types",
+  "description": "Schema for StyloFlow entity type definition files (*.entity.yaml)",
+  "type": "object",
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "description": "Namespace prefix for all entity types in this file (e.g., 'botdetection')"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this entity type collection"
+    },
+    "entity_types": {
+      "type": "object",
+      "description": "Map of entity type definitions",
+      "additionalProperties": {
+        "$ref": "#/$defs/entityType"
+      }
+    }
+  },
+  "required": ["namespace", "entity_types"],
+  "$defs": {
+    "entityType": {
+      "type": "object",
+      "description": "Definition of an entity type",
+      "required": ["base_type"],
+      "properties": {
+        "base_type": {
+          "type": "string",
+          "description": "Base .NET/primitive type",
+          "enum": [
+            "string",
+            "number",
+            "int",
+            "long",
+            "double",
+            "float",
+            "decimal",
+            "boolean",
+            "bool",
+            "datetime",
+            "timespan",
+            "guid",
+            "object",
+            "array",
+            "dictionary",
+            "embedded_vector",
+            "multivector"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of this entity type"
+        },
+        "persistence": {
+          "type": "string",
+          "description": "How this entity should be persisted",
+          "enum": ["ephemeral", "json", "database", "embedded", "file", "cached"],
+          "default": "ephemeral"
+        },
+        "nullable": {
+          "type": "boolean",
+          "description": "Whether this type can be null",
+          "default": true
+        },
+        "default_value": {
+          "description": "Default value for this type"
+        },
+        "validation": {
+          "$ref": "#/$defs/validation"
+        },
+        "element_type": {
+          "type": "string",
+          "description": "For array/dictionary types, the element type"
+        },
+        "key_type": {
+          "type": "string",
+          "description": "For dictionary types, the key type"
+        },
+        "properties": {
+          "type": "object",
+          "description": "For object types, the property definitions",
+          "additionalProperties": {
+            "$ref": "#/$defs/propertyDefinition"
+          }
+        },
+        "embedding": {
+          "$ref": "#/$defs/embeddingConfig"
+        },
+        "vectors": {
+          "type": "array",
+          "description": "For multivector types, the vector definitions",
+          "items": {
+            "$ref": "#/$defs/vectorDefinition"
+          }
+        },
+        "signal_pattern": {
+          "type": "string",
+          "description": "Pattern for composing this entity from signals"
+        },
+        "storage_hint": {
+          "type": "string",
+          "description": "Hint for storage implementation (e.g., 'sqlite', 'redis', 'qdrant')"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for categorization",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "propertyDefinition": {
+      "type": "object",
+      "description": "Definition of a property within an object entity type",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Property type (entity type reference or primitive)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this property"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this property is required",
+          "default": false
+        },
+        "default_value": {
+          "description": "Default value for this property"
+        },
+        "validation": {
+          "$ref": "#/$defs/validation"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation constraints for a type or property",
+      "properties": {
+        "min": {
+          "type": "number",
+          "description": "Minimum value (for numbers)"
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum value (for numbers)"
+        },
+        "min_length": {
+          "type": "integer",
+          "description": "Minimum length (for strings/arrays)"
+        },
+        "max_length": {
+          "type": "integer",
+          "description": "Maximum length (for strings/arrays)"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern (for strings)"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed values",
+          "items": {}
+        },
+        "format": {
+          "type": "string",
+          "description": "Format hint (e.g., 'email', 'uri', 'ipv4')"
+        }
+      }
+    },
+    "embeddingConfig": {
+      "type": "object",
+      "description": "Configuration for embedded vector types",
+      "properties": {
+        "dimensions": {
+          "type": "integer",
+          "description": "Vector dimensions",
+          "minimum": 1
+        },
+        "model": {
+          "type": "string",
+          "description": "Embedding model identifier"
+        },
+        "distance_metric": {
+          "type": "string",
+          "description": "Distance metric for similarity search",
+          "enum": ["cosine", "euclidean", "dot_product", "manhattan"],
+          "default": "cosine"
+        },
+        "normalize": {
+          "type": "boolean",
+          "description": "Whether vectors should be normalized",
+          "default": true
+        }
+      }
+    },
+    "vectorDefinition": {
+      "type": "object",
+      "description": "Definition of a named vector in a multivector type",
+      "required": ["name", "dimensions"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Vector identifier"
+        },
+        "dimensions": {
+          "type": "integer",
+          "description": "Vector dimensions",
+          "minimum": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "What this vector represents"
+        },
+        "weight": {
+          "type": "number",
+          "description": "Weight for similarity aggregation",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1.0
+        },
+        "model": {
+          "type": "string",
+          "description": "Embedding model for this vector"
+        },
+        "source_field": {
+          "type": "string",
+          "description": "Source field from which to generate this vector"
+        }
+      }
+    }
+  }
+}

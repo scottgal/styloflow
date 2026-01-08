@@ -1,0 +1,26 @@
+name: EmbeddedDetector
+priority: 100
+enabled: true
+description: An embedded manifest for testing
+
+taxonomy:
+  kind: aggregator
+  determinism: probabilistic
+  persistence: cached
+
+defaults:
+  weights:
+    base: 2.0
+    bot_signal: 2.5
+  confidence:
+    neutral: 0.1
+    bot_detected: 0.5
+    high_threshold: 0.8
+  timing:
+    timeout_ms: 500
+  features:
+    detailed_logging: false
+    enable_cache: false
+  parameters:
+    api_key: test_key
+    endpoint: https://api.example.com

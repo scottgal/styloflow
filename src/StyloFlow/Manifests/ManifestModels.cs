@@ -13,6 +13,8 @@ public class ComponentManifest
 
     public SignalScope Scope { get; set; } = new();
     public TaxonomyInfo Taxonomy { get; set; } = new();
+    public InputContract Input { get; set; } = new();
+    public OutputContract Output { get; set; } = new();
     public TriggerConfig Triggers { get; set; } = new();
     public EmitConfig Emits { get; set; } = new();
     public ListenConfig Listens { get; set; } = new();
@@ -22,6 +24,186 @@ public class ComponentManifest
     public ComponentDefaults Defaults { get; set; } = new();
     public ConfigBindings? Config { get; set; }
     public List<string> Tags { get; set; } = [];
+}
+
+/// <summary>
+/// Input contract for a component - what entity types it accepts.
+/// EntityType signals define the shape of acceptable inputs.
+/// </summary>
+public class InputContract
+{
+    /// <summary>
+    /// Entity types this component can process.
+    /// Examples: "http.request", "image/*", "behavioral.signature"
+    /// </summary>
+    public List<EntityTypeSpec> Accepts { get; set; } = [];
+
+    /// <summary>
+    /// Signal patterns required in the SignalSink before this component runs.
+    /// </summary>
+    public List<string> RequiredSignals { get; set; } = [];
+
+    /// <summary>
+    /// Optional signal patterns that enhance processing if present.
+    /// </summary>
+    public List<string> OptionalSignals { get; set; } = [];
+}
+
+/// <summary>
+/// Output contract for a component - what entity types it produces.
+/// </summary>
+public class OutputContract
+{
+    /// <summary>
+    /// Entity types this component produces.
+    /// </summary>
+    public List<EntityTypeSpec> Produces { get; set; } = [];
+
+    /// <summary>
+    /// Signal patterns emitted on success.
+    /// </summary>
+    public List<SignalSpec> Signals { get; set; } = [];
+}
+
+/// <summary>
+/// Specification for an entity type - the fundamental contract for atom I/O.
+/// Combines MIME types, schemas, and signal patterns into a unified contract.
+/// </summary>
+public class EntityTypeSpec
+{
+    /// <summary>
+    /// Entity type identifier. Hierarchical dot-notation.
+    /// Examples:
+    ///   - "http.request" - HTTP request
+    ///   - "http.response" - HTTP response
+    ///   - "image.png", "image/*" - Image files
+    ///   - "video.mp4", "video/*" - Video files
+    ///   - "behavioral.signature" - User behavior pattern
+    ///   - "document.pdf" - PDF document
+    ///   - "audio.wav" - Audio file
+    /// </summary>
+    public string Type { get; set; } = "";
+
+    /// <summary>
+    /// MIME type for file-based entities.
+    /// Examples: "image/png", "application/pdf", "video/mp4"
+    /// </summary>
+    public string? MimeType { get; set; }
+
+    /// <summary>
+    /// Reference to a schema definition (JSON Schema, YAML, etc.)
+    /// Can be an inline definition or a path to an external file.
+    /// </summary>
+    public SchemaRef? Schema { get; set; }
+
+    /// <summary>
+    /// Signal pattern for extracting this entity from SignalSink.
+    /// Uses glob patterns: "request.headers.*", "ip.geo.*"
+    /// </summary>
+    public string? SignalPattern { get; set; }
+
+    /// <summary>
+    /// Whether this entity type is required or optional.
+    /// </summary>
+    public bool Required { get; set; } = true;
+
+    /// <summary>
+    /// Human-readable description of this entity type.
+    /// </summary>
+    public string Description { get; set; } = "";
+
+    /// <summary>
+    /// Validation constraints for this entity type.
+    /// </summary>
+    public EntityConstraints? Constraints { get; set; }
+}
+
+/// <summary>
+/// Reference to a schema definition for structured entities.
+/// </summary>
+public class SchemaRef
+{
+    /// <summary>
+    /// Schema format: "json-schema", "yaml", "proto", "inline"
+    /// </summary>
+    public string Format { get; set; } = "json-schema";
+
+    /// <summary>
+    /// Schema location - can be a file path, URL, or inline definition.
+    /// </summary>
+    public string? Location { get; set; }
+
+    /// <summary>
+    /// Inline schema definition (for simple schemas).
+    /// </summary>
+    public Dictionary<string, object>? Inline { get; set; }
+
+    /// <summary>
+    /// Version of the schema.
+    /// </summary>
+    public string? Version { get; set; }
+}
+
+/// <summary>
+/// Constraints for entity validation.
+/// </summary>
+public class EntityConstraints
+{
+    /// <summary>
+    /// Maximum size in bytes (for files).
+    /// </summary>
+    public long? MaxSizeBytes { get; set; }
+
+    /// <summary>
+    /// Minimum size in bytes (for files).
+    /// </summary>
+    public long? MinSizeBytes { get; set; }
+
+    /// <summary>
+    /// Maximum duration in seconds (for video/audio).
+    /// </summary>
+    public double? MaxDurationSeconds { get; set; }
+
+    /// <summary>
+    /// Maximum width in pixels (for images/video).
+    /// </summary>
+    public int? MaxWidth { get; set; }
+
+    /// <summary>
+    /// Maximum height in pixels (for images/video).
+    /// </summary>
+    public int? MaxHeight { get; set; }
+
+    /// <summary>
+    /// Custom validation rules (pattern matching, range checks, etc.)
+    /// </summary>
+    public Dictionary<string, object> Rules { get; set; } = [];
+}
+
+/// <summary>
+/// Specification for a signal emitted by a component.
+/// </summary>
+public class SignalSpec
+{
+    /// <summary>
+    /// Signal key pattern.
+    /// </summary>
+    public string Key { get; set; } = "";
+
+    /// <summary>
+    /// Entity type of the signal value.
+    /// </summary>
+    public string? EntityType { get; set; }
+
+    /// <summary>
+    /// Signal salience (0.0-1.0).
+    /// </summary>
+    public double Salience { get; set; } = 0.5;
+
+    /// <summary>
+    /// Description of this signal.
+    /// </summary>
+    public string Description { get; set; } = "";
 }
 
 /// <summary>

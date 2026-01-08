@@ -14,7 +14,7 @@
     <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
     <Description>StyloFlow - Declarative orchestration infrastructure with YAML-driven configuration, blackboard pattern, and signal-based coordination. Built on Ephemeral.</Description>
     <PackageTags>orchestration;workflow;blackboard;signals;yaml;configuration;ephemeral</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
     <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -28,6 +28,16 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Embed JSON Schema files for YAML validation -->
+  <ItemGroup>
+    <EmbeddedResource Include="Schemas\*.json" />
+    <Content Include="Schemas\*.json" Pack="true" PackagePath="schemas" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

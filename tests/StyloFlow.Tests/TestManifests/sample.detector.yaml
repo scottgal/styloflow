@@ -1,0 +1,55 @@
+name: SampleDetector
+priority: 50
+enabled: true
+description: A sample detector for testing
+
+taxonomy:
+  kind: sensor
+  determinism: deterministic
+  persistence: ephemeral
+
+triggers:
+  requires:
+    - signal: request.present
+  skip_when:
+    - verified.human
+
+emits:
+  on_start:
+    - detector.sample.started
+  on_complete:
+    - key: detector.sample.confidence
+      type: double
+      confidence_range: [0.0, 1.0]
+  on_failure:
+    - detector.sample.failed
+
+defaults:
+  weights:
+    base: 1.0
+    bot_signal: 1.2
+    human_signal: 0.9
+    verified: 1.5
+    early_exit: 2.0
+  confidence:
+    neutral: 0.0
+    bot_detected: 0.3
+    human_indicated: -0.1
+    strong_signal: 0.6
+    high_threshold: 0.7
+    low_threshold: 0.2
+    escalation_threshold: 0.5
+  timing:
+    timeout_ms: 200
+    cache_refresh_sec: 600
+  features:
+    detailed_logging: true
+    enable_cache: true
+    can_early_exit: true
+    can_escalate: false
+  parameters:
+    max_retries: 3
+    patterns:
+      - "pattern1"
+      - "pattern2"
+    custom_threshold: 0.65
