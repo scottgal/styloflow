@@ -137,7 +137,9 @@ internal sealed class FreeTierLicenseManager : ILicenseManager
     public LicenseToken? CurrentLicense => null;
     public IReadOnlyList<string> EnabledFeatures => Array.Empty<string>();
 
+#pragma warning disable CS0067 // Event is never used - required by interface
     public event EventHandler<LicenseStateChangedEvent>? LicenseStateChanged;
+#pragma warning restore CS0067
 
     public Task<LicenseValidationResult> ValidateLicenseAsync(CancellationToken ct = default)
     {
@@ -160,7 +162,9 @@ internal sealed class NoOpWorkUnitMeter : IWorkUnitMeter
     public double ThrottleFactor => 1.0;
     public double HeadroomRemaining => double.MaxValue;
 
+#pragma warning disable CS0067 // Event is never used - required by interface
     public event EventHandler<WorkUnitThresholdEvent>? ThresholdCrossed;
+#pragma warning restore CS0067
 
     public void Record(double workUnits, string? moleculeType = null) { }
     public bool CanConsume(double workUnits) => true;

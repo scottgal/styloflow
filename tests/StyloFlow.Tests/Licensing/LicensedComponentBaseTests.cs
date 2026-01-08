@@ -485,7 +485,9 @@ internal class MockLicenseManager : ILicenseManager
     public LicenseToken? CurrentLicense => null;
     public IReadOnlyList<string> EnabledFeatures => _features;
 
+#pragma warning disable CS0067 // Event is never used - required by interface
     public event EventHandler<LicenseStateChangedEvent>? LicenseStateChanged;
+#pragma warning restore CS0067
 
     public Task<LicenseValidationResult> ValidateLicenseAsync(CancellationToken ct = default)
         => Task.FromResult(LicenseValidationResult.Success(null!));
@@ -527,7 +529,9 @@ internal class MockWorkUnitMeter : IWorkUnitMeter
     public double ThrottleFactor => 1.0;
     public double HeadroomRemaining => 1000;
 
+#pragma warning disable CS0067 // Event is never used - required by interface
     public event EventHandler<WorkUnitThresholdEvent>? ThresholdCrossed;
+#pragma warning restore CS0067
 
     public void Record(double workUnits, string? moleculeType = null)
     {

@@ -93,7 +93,7 @@ public class AnomalyScoringTests
         var result = AnomalyScoring.ComputeScore(profile);
 
         // Assert
-        Assert.True(result.Issues.Any(i => i.Category == "NullRate"));
+        Assert.Contains(result.Issues, i => i.Category == "NullRate");
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class AnomalyScoringTests
         var result = AnomalyScoring.ComputeScore(profile);
 
         // Assert
-        Assert.True(result.Issues.Any(i => i.Category == "Outliers"));
+        Assert.Contains(result.Issues, i => i.Category == "Outliers");
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class AnomalyScoringTests
         var result = AnomalyScoring.ComputeScore(profile);
 
         // Assert
-        Assert.True(result.Issues.Any(i => i.Category == "Distribution"));
+        Assert.Contains(result.Issues, i => i.Category == "Distribution");
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public class AnomalyScoringTests
         var result = AnomalyScoring.ComputeScore(profile);
 
         // Assert
-        Assert.True(result.Issues.Any(i => i.Category == "Cardinality" && i.Description.Contains("constant")));
+        Assert.Contains(result.Issues, i => i.Category == "Cardinality" && i.Description.Contains("constant"));
     }
 
     [Fact]
@@ -211,7 +211,7 @@ public class AnomalyScoringTests
         var result = AnomalyScoring.ComputeScore(profile);
 
         // Assert
-        Assert.True(result.Issues.Any(i => i.Category == "Schema"));
+        Assert.Contains(result.Issues, i => i.Category == "Schema");
     }
 
     [Fact]

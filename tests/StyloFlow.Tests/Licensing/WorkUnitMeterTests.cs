@@ -423,7 +423,9 @@ internal sealed class FreeTierLicenseManager : ILicenseManager
     public LicenseToken? CurrentLicense => null;
     public IReadOnlyList<string> EnabledFeatures => Array.Empty<string>();
 
+#pragma warning disable CS0067 // Event is never used - required by interface
     public event EventHandler<LicenseStateChangedEvent>? LicenseStateChanged;
+#pragma warning restore CS0067
 
     public Task<LicenseValidationResult> ValidateLicenseAsync(CancellationToken ct = default)
         => Task.FromResult(LicenseValidationResult.Failure("Free tier"));

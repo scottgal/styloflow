@@ -18,7 +18,8 @@
       "Bash(cmd /c \"cd /d D:\\\\Source\\\\styloflow && dotnet build src\\\\StyloFlow.Licensing\\\\StyloFlow.Licensing.csproj --verbosity minimal\")",
       "Bash(powershell -Command:*)",
       "WebSearch",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(dotnet pack:*)"
     ]
   }
 }
