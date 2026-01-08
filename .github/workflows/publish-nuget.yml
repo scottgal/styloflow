@@ -11,13 +11,13 @@ on:
         required: true
         type: string
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write             # Required for OIDC trusted publishing
 
     steps:
       - name: Checkout
@@ -36,13 +36,13 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
           else
             TAG="${GITHUB_REF#refs/tags/}"
             VERSION="${TAG#v}"
           fi
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "Publishing version: ${VERSION}"
 
       - name: Restore
@@ -56,16 +56,29 @@ jobs:
 
       - name: Pack
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          mkdir -p ./nupkg
-
           dotnet pack src/StyloFlow/StyloFlow.csproj \
             --configuration Release --no-build \
-            -p:PackageVersion=$VERSION \
+            -p:PackageVersion=${{ steps.version.outputs.VERSION }} \
             --output ./nupkg
 
       - name: List packages
         run: ls -la ./nupkg/
 
+      - name: Login to NuGet (OIDC)
+        id: nuget_login
+        uses: NuGet/login@v1
+        with:
+          user: 'mostlylucid'
+
       - name: Push to NuGet (Trusted Publishing)
-        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./nupkg/*.nupkg
