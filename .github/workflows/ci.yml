@@ -25,23 +25,20 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Restore
-        run: dotnet restore StyloFlow.sln
-
-      # Build all projects except StyloFlow.Complete (metapackage depends on published NuGet packages)
+      # Restore and build projects individually (excluding StyloFlow.Complete metapackage)
       - name: Build
         run: |
-          dotnet build src/StyloFlow.Core/StyloFlow.Core.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Core/StyloFlow.Retrieval.Core.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Documents/StyloFlow.Retrieval.Documents.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Images/StyloFlow.Retrieval.Images.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Audio/StyloFlow.Retrieval.Audio.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Video/StyloFlow.Retrieval.Video.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Retrieval.Data/StyloFlow.Retrieval.Data.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Dashboard.Core/StyloFlow.Dashboard.Core.csproj --configuration Release --no-restore
-          dotnet build src/StyloFlow.Licensing/StyloFlow.Licensing.csproj --configuration Release --no-restore
-          dotnet build tools/StyloFlow.Sign/StyloFlow.Sign.csproj --configuration Release --no-restore
-          dotnet build tests/StyloFlow.Tests/StyloFlow.Tests.csproj --configuration Release --no-restore
+          dotnet build src/StyloFlow.Core/StyloFlow.Core.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Core/StyloFlow.Retrieval.Core.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Documents/StyloFlow.Retrieval.Documents.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Images/StyloFlow.Retrieval.Images.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Audio/StyloFlow.Retrieval.Audio.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Video/StyloFlow.Retrieval.Video.csproj --configuration Release
+          dotnet build src/StyloFlow.Retrieval.Data/StyloFlow.Retrieval.Data.csproj --configuration Release
+          dotnet build src/StyloFlow.Dashboard.Core/StyloFlow.Dashboard.Core.csproj --configuration Release
+          dotnet build src/StyloFlow.Licensing/StyloFlow.Licensing.csproj --configuration Release
+          dotnet build tools/StyloFlow.Sign/StyloFlow.Sign.csproj --configuration Release
+          dotnet build tests/StyloFlow.Tests/StyloFlow.Tests.csproj --configuration Release
 
       - name: Test
         run: dotnet test tests/StyloFlow.Tests/StyloFlow.Tests.csproj --configuration Release --no-build --verbosity normal

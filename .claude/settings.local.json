@@ -19,7 +19,8 @@
       "Bash(powershell -Command:*)",
       "WebSearch",
       "Bash(dotnet run:*)",
-      "Bash(dotnet pack:*)"
+      "Bash(dotnet pack:*)",
+      "Bash(CI=true dotnet build:*)"
     ]
   }
 }

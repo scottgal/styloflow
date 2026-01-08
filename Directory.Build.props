@@ -12,5 +12,8 @@
     <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
     <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+
+    <!-- Disable auto-packing during CI builds (pack explicitly in publish workflow) -->
+    <GeneratePackageOnBuild Condition="'$(CI)' == 'true'">false</GeneratePackageOnBuild>
   </PropertyGroup>
 </Project>
