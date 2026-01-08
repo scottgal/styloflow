@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mostlylucid.Ephemeral.Complete" Version="2.1.0" />
+    <PackageReference Include="Mostlylucid.Ephemeral" Version="2.1.0" />
     <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
   </ItemGroup>
 
