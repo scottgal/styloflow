@@ -1,0 +1,58 @@
+# Signal Clamp - Limits signal values to a range (like a limiter/compressor)
+name: signal-clamp
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalClampAtom
+description: Clamps numeric signals to min/max range (like audio limiter)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: Numeric signal to clamp
+
+output:
+  produces:
+    - type: number
+      description: Clamped value within range
+  signals:
+    - key: clamp.value
+      entityType: number
+      salience: 1.0
+      description: The clamped signal value
+    - key: clamp.limited
+      entityType: bool
+      salience: 0.7
+      description: True if value was limited
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any numeric signal
+
+emits:
+  onComplete:
+    - key: clamp.value
+      type: number
+      description: Signal clamped to range
+    - key: clamp.limited
+      type: bool
+      description: Whether limiting occurred
+
+defaults:
+  parameters:
+    min: 0
+    max: 1.0
+    softClip: false
+
+tags:
+  - shaper
+  - limiter
+  - range
+  - modular-synth

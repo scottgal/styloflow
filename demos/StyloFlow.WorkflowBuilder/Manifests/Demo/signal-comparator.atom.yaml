@@ -1,0 +1,60 @@
+# Signal Comparator - Compares two signals and outputs result
+name: signal-comparator
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalComparatorAtom
+description: Compares signal values and outputs boolean result
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: First signal (A)
+    - type: number
+      description: Second signal (B) or threshold
+
+output:
+  produces:
+    - type: bool
+      description: Comparison result
+  signals:
+    - key: compare.result
+      entityType: bool
+      salience: 1.0
+      description: True if condition met
+    - key: compare.difference
+      entityType: number
+      salience: 0.7
+      description: Difference between A and B
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Signal to compare
+
+emits:
+  onComplete:
+    - key: compare.result
+      type: bool
+      description: Comparison result
+    - key: compare.difference
+      type: number
+      description: A - B
+
+defaults:
+  parameters:
+    operator: "gt"  # gt, lt, eq, ne, gte, lte
+    threshold: 0.5
+    hysteresis: 0.1
+
+tags:
+  - shaper
+  - comparator
+  - logic
+  - modular-synth

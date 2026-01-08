@@ -1,6 +1,13 @@
 using System.Text.Json;
 using Mostlylucid.Ephemeral;
 using StyloFlow.WorkflowBuilder.Atoms;
+using StyloFlow.WorkflowBuilder.Atoms.Analyzers;
+using StyloFlow.WorkflowBuilder.Atoms.Config;
+using StyloFlow.WorkflowBuilder.Atoms.Constrainers;
+using StyloFlow.WorkflowBuilder.Atoms.Proposers;
+using StyloFlow.WorkflowBuilder.Atoms.Renderers;
+using StyloFlow.WorkflowBuilder.Atoms.Sensors;
+using StyloFlow.WorkflowBuilder.Atoms.Shapers;
 using StyloFlow.WorkflowBuilder.Models;
 
 namespace StyloFlow.WorkflowBuilder.Runtime;
@@ -31,13 +38,39 @@ public sealed class WorkflowOrchestrator : IAsyncDisposable
         // Register atom executors by manifest name
         _atomExecutors = new Dictionary<string, Func<WorkflowAtomContext, Task>>
         {
+            // Sensors
             ["timer-trigger"] = TimerTriggerSensor.ExecuteAsync,
             ["http-receiver"] = HttpReceiverSensor.ExecuteAsync,
+
+            // Analyzers/Extractors
             ["text-analyzer"] = TextAnalyzerExtractor.ExecuteAsync,
+
+            // Proposers
             ["sentiment-detector"] = SentimentDetectorProposer.ExecuteAsync,
+
+            // Constrainers/Filters
             ["threshold-filter"] = ThresholdFilterConstrainer.ExecuteAsync,
+
+            // Renderers/Emitters
             ["email-sender"] = EmailSenderRenderer.ExecuteAsync,
-            ["log-writer"] = LogWriterRenderer.ExecuteAsync
+            ["log-writer"] = LogWriterRenderer.ExecuteAsync,
+
+            // Shapers (modular synth analogues)
+            ["signal-clamp"] = SignalClampShaper.ExecuteAsync,
+            ["signal-filter"] = SignalFilterShaper.ExecuteAsync,
+            ["signal-comparator"] = SignalComparatorShaper.ExecuteAsync,
+            ["signal-mixer"] = SignalMixerShaper.ExecuteAsync,
+            ["signal-quantizer"] = SignalQuantizerShaper.ExecuteAsync,
+            ["signal-attenuverter"] = SignalAttenuverterShaper.ExecuteAsync,
+            ["signal-switch"] = SignalSwitchShaper.ExecuteAsync,
+            ["signal-slew"] = SignalSlewShaper.ExecuteAsync,
+            ["signal-delay"] = SignalDelayShaper.ExecuteAsync,
+
+            // Config sources
+            ["config-env"] = ConfigEnvSensor.ExecuteAsync,
+            ["config-file"] = ConfigFileSensor.ExecuteAsync,
+            ["config-db"] = ConfigDbSensor.ExecuteAsync,
+            ["config-vault"] = ConfigVaultSensor.ExecuteAsync
         };
     }
 

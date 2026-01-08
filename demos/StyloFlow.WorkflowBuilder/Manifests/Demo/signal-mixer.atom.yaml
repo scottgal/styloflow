@@ -1,0 +1,62 @@
+# Signal Mixer - Combines multiple signals (like a mixer in audio)
+name: signal-mixer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalMixerAtom
+description: Mixes/combines multiple signals with weights (like audio mixer)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: Signal A
+    - type: number
+      description: Signal B (optional)
+    - type: number
+      description: Signal C (optional)
+
+output:
+  produces:
+    - type: number
+      description: Mixed signal
+  signals:
+    - key: mix.output
+      entityType: number
+      salience: 1.0
+      description: Combined signal value
+    - key: mix.peak
+      entityType: number
+      salience: 0.5
+      description: Peak value in mix
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any numeric signals to mix
+
+emits:
+  onComplete:
+    - key: mix.output
+      type: number
+      description: Weighted mix of inputs
+    - key: mix.peak
+      type: number
+      description: Highest value in mix
+
+defaults:
+  parameters:
+    mode: "average"  # average, sum, max, min, weighted
+    weights: [1.0, 1.0, 1.0]
+    normalize: true
+
+tags:
+  - shaper
+  - mixer
+  - combine
+  - modular-synth

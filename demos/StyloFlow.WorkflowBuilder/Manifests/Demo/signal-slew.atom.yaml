@@ -1,0 +1,59 @@
+# Signal Slew Limiter - Smooths rapid changes (like slew limiter/portamento)
+name: signal-slew
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalSlewAtom
+description: Limits rate of change for smooth transitions (portamento/glide)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: Signal with rapid changes
+
+output:
+  produces:
+    - type: number
+      description: Smoothed signal
+  signals:
+    - key: slew.value
+      entityType: number
+      salience: 1.0
+      description: Smoothed output value
+    - key: slew.moving
+      entityType: bool
+      salience: 0.5
+      description: True while value is transitioning
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any numeric signal
+
+emits:
+  onComplete:
+    - key: slew.value
+      type: number
+      description: Rate-limited value
+    - key: slew.moving
+      type: bool
+      description: Whether still in transition
+
+defaults:
+  parameters:
+    riseTime: 100    # ms to go from 0 to 1
+    fallTime: 100    # ms to go from 1 to 0
+    shape: "linear"  # linear, exponential, logarithmic
+
+tags:
+  - shaper
+  - slew
+  - smooth
+  - portamento
+  - modular-synth

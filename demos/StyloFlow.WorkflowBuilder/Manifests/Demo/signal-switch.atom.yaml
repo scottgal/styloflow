@@ -1,0 +1,63 @@
+# Signal Switch/Mux - Routes signals based on control input
+name: signal-switch
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalSwitchAtom
+description: Routes between inputs based on control signal (mux/demux)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: any
+      description: Input A
+    - type: any
+      description: Input B
+    - type: boolean
+      description: Control signal (selects A or B)
+
+output:
+  produces:
+    - type: any
+      description: Selected input
+  signals:
+    - key: switch.output
+      entityType: any
+      salience: 1.0
+      description: Currently selected input value
+    - key: switch.selected
+      entityType: string
+      salience: 0.5
+      description: Which input is selected (A or B)
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any signal to route
+
+emits:
+  onComplete:
+    - key: switch.output
+      type: any
+      description: Value from selected input
+    - key: switch.selected
+      type: string
+      description: Selected channel (A or B)
+
+defaults:
+  parameters:
+    mode: "binary"     # binary (A/B), sequential (round-robin), random
+    channels: 2        # Number of inputs for sequential mode
+    defaultChannel: 0
+
+tags:
+  - shaper
+  - switch
+  - mux
+  - router
+  - modular-synth

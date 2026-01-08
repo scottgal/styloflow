@@ -1,0 +1,63 @@
+# File-based Config Source
+name: config-file
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.ConfigFileAtom
+description: Reads configuration values from JSON/YAML files
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: config
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is a config source
+
+output:
+  produces:
+    - type: config.document
+      description: Parsed configuration document
+  signals:
+    - key: config.loaded
+      entityType: bool
+      salience: 1.0
+      description: Emitted when config file is loaded
+    - key: config.value
+      entityType: string
+      salience: 0.9
+      description: The configuration value at path
+    - key: config.document
+      entityType: object
+      salience: 0.8
+      description: Full parsed config document
+
+triggers:
+  requires: []  # No triggers - this is a config source
+
+emits:
+  onComplete:
+    - key: config.loaded
+      type: bool
+      description: True when file loaded successfully
+    - key: config.value
+      type: string
+      description: Value at specified path
+    - key: config.document
+      type: object
+      description: Full config document
+
+defaults:
+  parameters:
+    path: config.json
+    format: json  # json, yaml
+    jsonPath: $.settings
+    watchForChanges: false
+
+tags:
+  - config
+  - file
+  - json
+  - yaml
+  - source

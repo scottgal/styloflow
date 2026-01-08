@@ -33,7 +33,9 @@
       "Bash(Get-ChildItem -Path \"D:\\\\Source\\\\mostlylucid.atoms\\\\mostlylucid.ephemeral\\\\src\" -Recurse -Filter \"*.cs\")",
       "Bash(Where-Object { $_FullName -notmatch \"\\\\obj\\\\\" })",
       "Bash(Select-Object -First 30 -ExpandProperty FullName)",
-      "Bash(dotnet list:*)"
+      "Bash(dotnet list:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

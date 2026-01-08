@@ -292,6 +292,36 @@ public class WorkflowBuilderMiddleware
                 {
                     new() { Id = "e1", SourceNodeId = "1", SignalKey = "http.body", TargetNodeId = "2" }
                 }
+            },
+            // Coordinator composition demo - shows how atoms can spawn coordinators
+            new WorkflowDefinition
+            {
+                Id = "sample-coordinator-composition",
+                Name = "Coordinator Composition",
+                Description = "Demonstrates single-keyed concurrency: HTTP requests spawn per-user coordinators",
+                Nodes = new List<WorkflowNode>
+                {
+                    // Entry point - receives HTTP requests
+                    new() { Id = "1", ManifestName = "http-receiver", X = 50, Y = 200, Config = new() { ["description"] = "Receives user requests" } },
+                    // Spawns a coordinator per unique user-id
+                    new() { Id = "2", ManifestName = "threshold-filter", X = 350, Y = 200, Config = new() { ["description"] = "Routes by user-id (single-key coordinator)" } },
+                    // Parallel processing branch A
+                    new() { Id = "3", ManifestName = "text-analyzer", X = 650, Y = 100, Config = new() { ["description"] = "Process text (keyed by user)" } },
+                    // Parallel processing branch B
+                    new() { Id = "4", ManifestName = "sentiment-detector", X = 650, Y = 300, Config = new() { ["description"] = "Detect sentiment (keyed by user)" } },
+                    // Merge results
+                    new() { Id = "5", ManifestName = "log-writer", X = 950, Y = 200, Config = new() { ["description"] = "Aggregate results per user" } }
+                },
+                Edges = new List<WorkflowEdge>
+                {
+                    new() { Id = "e1", SourceNodeId = "1", SignalKey = "http.body", TargetNodeId = "2" },
+                    // Fan-out: coordinator spawns parallel atoms
+                    new() { Id = "e2", SourceNodeId = "2", SignalKey = "filter.passed", TargetNodeId = "3" },
+                    new() { Id = "e3", SourceNodeId = "2", SignalKey = "filter.passed", TargetNodeId = "4" },
+                    // Fan-in: results merge back
+                    new() { Id = "e4", SourceNodeId = "3", SignalKey = "text.analyzed", TargetNodeId = "5" },
+                    new() { Id = "e5", SourceNodeId = "4", SignalKey = "sentiment.score", TargetNodeId = "5" }
+                }
             }
         };
     }
@@ -309,6 +339,7 @@ public class WorkflowBuilderMiddleware
     <script src=""https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"" defer></script>
     <link rel=""stylesheet"" href=""https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.css"">
     <script src=""https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.js""></script>
+    <script src=""https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js""></script>
     <style>
         /* Canvas styling */
         .drawflow {{
@@ -330,14 +361,14 @@ public class WorkflowBuilderMiddleware
         }}
 
         .drawflow .drawflow-node:hover {{
-            border-color: #e94560;
-            box-shadow: 0 6px 30px rgba(233,69,96,0.3);
+            border-color: #4a6fa5;
+            box-shadow: 0 6px 24px rgba(74, 111, 165, 0.25);
             transform: translateY(-2px);
         }}
 
         .drawflow .drawflow-node.selected {{
-            border-color: #e94560;
-            box-shadow: 0 0 20px rgba(233,69,96,0.5);
+            border-color: #06b6d4;
+            box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
         }}
 
         /* Node header */
@@ -387,22 +418,149 @@ public class WorkflowBuilderMiddleware
 
         .port-label {{
             font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 3px 8px 3px 6px;
             font-family: 'Monaco', 'Menlo', monospace;
             white-space: nowrap;
+            cursor: grab;
+            transition: all 0.15s ease;
+            user-select: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }}
 
+        .port-label::before {{
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            transition: all 0.15s ease;
+        }}
+
+        .port-label:hover {{
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px currentColor;
+        }}
+
+        .port-label:active {{
+            cursor: grabbing;
+            transform: scale(0.95);
+        }}
+
+        .port-label.dragging {{
+            opacity: 0.7;
+            transform: scale(0.9) translateX(5px);
+            box-shadow: 0 0 12px currentColor;
+        }}
+
+        /* Input signals - arrow pointing into the node (left side tab) */
         .port-label.input {{
-            background: rgba(99, 102, 241, 0.2);
-            color: #818cf8;
-            border-left: 2px solid #6366f1;
+            background: linear-gradient(90deg, transparent 0px, rgba(99, 102, 241, 0.3) 8px);
+            color: #a5b4fc;
+            border-radius: 0 6px 6px 0;
+            margin-left: -8px;
+            padding-left: 12px;
         }}
 
+        .port-label.input::before {{
+            content: '◂';
+            color: #6366f1;
+            font-size: 10px;
+            margin-right: 2px;
+        }}
+
+        .port-label.input:hover {{
+            background: linear-gradient(90deg, transparent 0px, rgba(99, 102, 241, 0.5) 8px);
+            transform: translateX(-3px);
+        }}
+
+        /* Output signals - arrow pointing out of the node (right side tab) */
         .port-label.output {{
-            background: rgba(34, 197, 94, 0.2);
-            color: #4ade80;
-            border-right: 2px solid #22c55e;
+            background: linear-gradient(270deg, transparent 0px, rgba(34, 197, 94, 0.3) 8px);
+            color: #86efac;
+            border-radius: 6px 0 0 6px;
+            margin-right: -8px;
+            padding-right: 12px;
+            flex-direction: row-reverse;
+        }}
+
+        .port-label.output::before {{
+            content: '▸';
+            color: #22c55e;
+            font-size: 10px;
+            margin-left: 2px;
+        }}
+
+        .port-label.output:hover {{
+            background: linear-gradient(270deg, transparent 0px, rgba(34, 197, 94, 0.5) 8px);
+            transform: translateX(3px);
+        }}
+
+        /* Data type color coding for signals */
+        .port-label[data-signal*=""string""], .port-label[data-signal*=""text""], .port-label[data-signal*=""body""], .port-label[data-signal*=""label""] {{
+            border-bottom: 2px solid #3b82f6;  /* blue for strings */
+        }}
+
+        .port-label[data-signal*=""score""], .port-label[data-signal*=""count""], .port-label[data-signal*=""value""], .port-label[data-signal*=""number""] {{
+            border-bottom: 2px solid #22c55e;  /* green for numbers */
+        }}
+
+        .port-label[data-signal*=""passed""], .port-label[data-signal*=""exceeded""], .port-label[data-signal*=""bool""], .port-label[data-signal*=""is_""] {{
+            border-bottom: 2px solid #a855f7;  /* purple for booleans */
+        }}
+
+        .port-label[data-signal*=""received""], .port-label[data-signal*=""triggered""], .port-label[data-signal*=""record""], .port-label[data-signal*=""document""] {{
+            border-bottom: 2px solid #f59e0b;  /* amber for objects/events */
+        }}
+
+        .port-label[data-signal*=""config""], .port-label[data-signal*=""secret""] {{
+            border-bottom: 2px solid #84cc16;  /* lime for config */
+        }}
+
+        /* Untyped / object signals - grey */
+        .port-label:not([data-signal*=""string""]):not([data-signal*=""text""]):not([data-signal*=""body""]):not([data-signal*=""label""]):not([data-signal*=""score""]):not([data-signal*=""count""]):not([data-signal*=""value""]):not([data-signal*=""number""]):not([data-signal*=""passed""]):not([data-signal*=""exceeded""]):not([data-signal*=""bool""]):not([data-signal*=""is_""]):not([data-signal*=""received""]):not([data-signal*=""triggered""]):not([data-signal*=""record""]):not([data-signal*=""document""]):not([data-signal*=""config""]):not([data-signal*=""secret""]) {{
+            border-bottom: 2px solid #6b7280;  /* grey for untyped/object */
+        }}
+
+        /* Signal connection line while dragging */
+        .signal-drag-line {{
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+        }}
+
+        .signal-drag-line line {{
+            stroke: #22c55e;
+            stroke-width: 3;
+            stroke-dasharray: 8, 4;
+            animation: dash-flow 0.5s linear infinite;
+        }}
+
+        @keyframes dash-flow {{
+            from {{ stroke-dashoffset: 12; }}
+            to {{ stroke-dashoffset: 0; }}
+        }}
+
+        /* Drop target highlighting for signals - subtle fill changes */
+        .port-label.drop-target-valid {{
+            background: rgba(34, 197, 94, 0.35) !important;
+            border-color: #22c55e !important;
+        }}
+
+        .port-label.drop-target-adaptable {{
+            background: rgba(245, 158, 11, 0.35) !important;
+            border-color: #f59e0b !important;
+        }}
+
+        .port-label.drop-target-invalid {{
+            background: rgba(100, 100, 100, 0.2) !important;
+            opacity: 0.4;
+        }}
+
+        .port-label.drop-hover {{
+            background: rgba(34, 197, 94, 0.5) !important;
+            transform: scale(1.05);
         }}
 
         /* Connection ports */
@@ -436,38 +594,382 @@ public class WorkflowBuilderMiddleware
             box-shadow: 0 0 10px #22c55e;
         }}
 
-        /* Connection lines */
+        /* Connection lines - base styling */
         .drawflow .connection .main-path {{
-            stroke: #22c55e;
+            stroke: #6b7280;
             stroke-width: 3px;
             stroke-linecap: round;
-            filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.5));
+            filter: drop-shadow(0 0 4px rgba(107, 114, 128, 0.4));
+            transition: stroke 0.2s ease, stroke-width 0.2s ease;
         }}
 
         .drawflow .connection .main-path:hover {{
-            stroke: #4ade80;
+            stroke-width: 4px;
+            filter: drop-shadow(0 0 8px currentColor);
+        }}
+
+        /* Signal type colored connections */
+        .drawflow .connection.signal-type-string .main-path {{
+            stroke: #3b82f6;
+            filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
+        }}
+
+        .drawflow .connection.signal-type-number .main-path {{
+            stroke: #22c55e;
+            filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.5));
+        }}
+
+        .drawflow .connection.signal-type-boolean .main-path {{
+            stroke: #a855f7;
+            filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.5));
+        }}
+
+        .drawflow .connection.signal-type-object .main-path {{
+            stroke: #f59e0b;
+            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+        }}
+
+        .drawflow .connection.signal-type-config .main-path {{
+            stroke: #84cc16;
+            filter: drop-shadow(0 0 4px rgba(132, 204, 22, 0.5));
+        }}
+
+        .drawflow .connection.signal-type-any .main-path {{
+            stroke: #6b7280;
+            filter: drop-shadow(0 0 4px rgba(107, 114, 128, 0.4));
+        }}
+
+        /* Signal-matched connection (compatible signals) */
+        .drawflow .connection.signal-matched .main-path {{
+            stroke: #22c55e;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.8));
+        }}
+
+        /* Signal-any connection (target accepts any) */
+        .drawflow .connection.signal-any .main-path {{
+            stroke: #8b5cf6;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.6));
+        }}
+
+        /* Signal-warning connection (incompatible) */
+        .drawflow .connection.signal-warning .main-path {{
+            stroke: #ef4444;
+            stroke-width: 3px;
+            stroke-dasharray: 8, 4;
+            filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
+        }}
+
+        /* Signal-adaptable connection (needs adapter) */
+        .drawflow .connection.signal-adaptable .main-path {{
+            stroke: #f59e0b;
+            stroke-width: 3px;
+            stroke-dasharray: 12, 4;
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+            cursor: pointer;
+            animation: pulse-adaptable 2s infinite;
+        }}
+
+        @keyframes pulse-adaptable {{
+            0%, 100% {{ filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6)); }}
+            50% {{ filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.9)); }}
+        }}
+
+        .drawflow .connection.signal-adaptable:hover .main-path {{
+            stroke: #fbbf24;
             stroke-width: 4px;
         }}
 
-        /* Kind-specific colors */
-        .kind-sensor .node-header {{
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        /* Inhibitor connection (blocks when signal fires) */
+        .drawflow .connection.signal-inhibitor .main-path {{
+            stroke: #dc2626;
+            stroke-width: 2px;
+            stroke-dasharray: 4, 4;
+            filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.6));
+        }}
+
+        .drawflow .connection.signal-inhibitor::after {{
+            content: '⊘';
+            position: absolute;
+            color: #dc2626;
+            font-size: 16px;
+        }}
+
+        /* Context menu for inhibitors */
+        .context-menu {{
+            position: fixed;
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 4px 0;
+            min-width: 180px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }}
+
+        .context-menu-item {{
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #e0e0e0;
+        }}
+
+        .context-menu-item:hover {{
+            background: rgba(233, 69, 96, 0.2);
+        }}
+
+        .context-menu-item.danger {{
+            color: #ef4444;
+        }}
+
+        .context-menu-divider {{
+            height: 1px;
+            background: #0f3460;
+            margin: 4px 0;
+        }}
+
+        /* Adapter Panel Popup */
+        .adapter-panel {{
+            position: fixed;
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 280px;
+            max-width: 360px;
+            z-index: 1001;
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+        }}
+
+        .adapter-panel-header {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #0f3460;
+        }}
+
+        .adapter-panel-header h4 {{
+            margin: 0;
+            color: #f59e0b;
+            font-size: 14px;
+            font-weight: 600;
+        }}
+
+        .adapter-panel-body {{
+            margin-bottom: 12px;
+        }}
+
+        .adapter-signal-pair {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }}
+
+        .adapter-signal {{
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }}
+
+        .adapter-signal.source {{
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }}
+
+        .adapter-signal.target {{
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }}
+
+        .adapter-arrow {{
+            color: #f59e0b;
+            font-size: 16px;
+        }}
+
+        .adapter-type-info {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+        }}
+
+        .adapter-type-badge {{
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }}
+
+        .adapter-type-badge.string {{ background: #3b82f6; color: white; }}
+        .adapter-type-badge.number {{ background: #22c55e; color: white; }}
+        .adapter-type-badge.boolean {{ background: #8b5cf6; color: white; }}
+        .adapter-type-badge.object {{ background: #f59e0b; color: white; }}
+
+        .adapter-options {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }}
+
+        .adapter-option {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.15);
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }}
+
+        .adapter-option:hover {{
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }}
+
+        .adapter-option.selected {{
+            background: rgba(245, 158, 11, 0.2);
+            border-color: #f59e0b;
+        }}
+
+        .adapter-option-icon {{
+            font-size: 16px;
+        }}
+
+        .adapter-option-info {{
+            flex: 1;
+        }}
+
+        .adapter-option-name {{
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }}
+
+        .adapter-option-desc {{
+            font-size: 10px;
+            color: #888;
+        }}
+
+        .adapter-panel-footer {{
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid #0f3460;
+        }}
+
+        /* Inhibitor target highlighting */
+        .drawflow .drawflow-node.inhibitor-target {{
+            border-color: #dc2626 !important;
+            animation: pulse-inhibitor 1s infinite;
+            cursor: crosshair;
+        }}
+
+        @keyframes pulse-inhibitor {{
+            0%, 100% {{ box-shadow: 0 0 10px rgba(220, 38, 38, 0.4); }}
+            50% {{ box-shadow: 0 0 20px rgba(220, 38, 38, 0.8); }}
+        }}
+
+        /* Coordinator node styling */
+        .kind-coordinator .node-header {{
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
             color: white;
         }}
 
-        .kind-analyzer .node-header {{
-            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-            color: white;
-        }}
-
-        .kind-proposer .node-header {{
+        .kind-adapter .node-header {{
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
         }}
 
+        /* Target highlight during connection */
+        .drawflow .drawflow-node.connection-target-valid {{
+            border-color: #22c55e !important;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5) !important;
+        }}
+
+        .drawflow .drawflow-node.connection-target-invalid {{
+            border-color: #ef4444 !important;
+            opacity: 0.5;
+        }}
+
+        /* Zoom level indicator */
+        .zoom-level-badge {{
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }}
+        .zoom-level-badge.atom {{ background: #3b82f6; color: white; }}
+        .zoom-level-badge.molecule {{ background: #8b5cf6; color: white; }}
+        .zoom-level-badge.wave {{ background: #22c55e; color: white; }}
+
+        /* Molecule view - grouped nodes */
+        .molecule-group {{
+            border: 2px dashed #8b5cf6;
+            border-radius: 16px;
+            padding: 16px;
+            background: rgba(139, 92, 246, 0.1);
+        }}
+
+        /* Wave view - simplified nodes */
+        .wave-view .drawflow-node {{
+            min-width: 120px !important;
+        }}
+        .wave-view .node-body,
+        .wave-view .signal-ports {{
+            display: none !important;
+        }}
+
+        /* Kind-specific colors - muted/dampened */
+        .kind-sensor .node-header {{
+            background: linear-gradient(135deg, #4a6fa5 0%, #3d5a80 100%);
+            color: #e8edf2;
+        }}
+
+        .kind-analyzer .node-header {{
+            background: linear-gradient(135deg, #7c6b9e 0%, #5e4d7a 100%);
+            color: #e8edf2;
+        }}
+
+        .kind-proposer .node-header {{
+            background: linear-gradient(135deg, #b8956e 0%, #96724d 100%);
+            color: #e8edf2;
+        }}
+
         .kind-emitter .node-header {{
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
+            background: linear-gradient(135deg, #a86565 0%, #8b4f4f 100%);
+            color: #e8edf2;
+        }}
+
+        /* Shaper - modular synth signal processors */
+        .kind-shaper .node-header {{
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: #e8edf2;
+        }}
+
+        /* Config source atoms */
+        .kind-config .node-header {{
+            background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+            color: #1a1a2e;
         }}
 
         /* Palette styling */
@@ -492,7 +994,7 @@ public class WorkflowBuilderMiddleware
         }}
 
         .palette-card:hover {{
-            border-color: #e94560;
+            border-color: #9e6b78;
         }}
 
         .palette-header {{
@@ -500,6 +1002,12 @@ public class WorkflowBuilderMiddleware
             font-weight: 600;
             font-size: 12px;
         }}
+
+        /* Muted palette colors */
+        .palette-card .kind-sensor {{ background: #4a6fa5; }}
+        .palette-card .kind-analyzer {{ background: #7c6b9e; }}
+        .palette-card .kind-proposer {{ background: #b8956e; }}
+        .palette-card .kind-emitter {{ background: #a86565; }}
 
         .palette-body {{
             padding: 6px 12px 10px;
@@ -541,16 +1049,18 @@ public class WorkflowBuilderMiddleware
             letter-spacing: 0.5px;
         }}
 
-        .kind-badge.sensor {{ background: #3b82f6; color: white; }}
-        .kind-badge.analyzer {{ background: #8b5cf6; color: white; }}
-        .kind-badge.proposer {{ background: #f59e0b; color: white; }}
-        .kind-badge.emitter {{ background: #ef4444; color: white; }}
+        .kind-badge.sensor {{ background: #4a6fa5; color: #e8edf2; }}
+        .kind-badge.analyzer {{ background: #7c6b9e; color: #e8edf2; }}
+        .kind-badge.proposer {{ background: #b8956e; color: #e8edf2; }}
+        .kind-badge.emitter {{ background: #a86565; color: #e8edf2; }}
+        .kind-badge.shaper {{ background: #06b6d4; color: #e8edf2; }}
+        .kind-badge.config {{ background: #84cc16; color: #1a1a2e; }}
 
         /* Scrollbar */
         ::-webkit-scrollbar {{ width: 6px; }}
         ::-webkit-scrollbar-track {{ background: #1a1a2e; }}
         ::-webkit-scrollbar-thumb {{ background: #0f3460; border-radius: 3px; }}
-        ::-webkit-scrollbar-thumb:hover {{ background: #e94560; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: #9e6b78; }}
 
         /* Sample workflow cards */
         .sample-card {{
@@ -563,9 +1073,162 @@ public class WorkflowBuilderMiddleware
         }}
 
         .sample-card:hover {{
-            border-color: #e94560;
+            border-color: #9e6b78;
             transform: translateY(-2px);
         }}
+
+        /* Loupe - hover detail popout */
+        .loupe {{
+            position: fixed;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #4a6fa5;
+            border-radius: 12px;
+            padding: 14px;
+            min-width: 260px;
+            max-width: 360px;
+            z-index: 1100;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(74, 111, 165, 0.2);
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.95) translateY(5px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }}
+
+        .loupe.visible {{
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }}
+
+        .loupe-header {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #0f3460;
+        }}
+
+        .loupe-icon {{
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 14px;
+        }}
+
+        .loupe-title {{
+            flex: 1;
+        }}
+
+        .loupe-title h4 {{
+            margin: 0;
+            color: #e0e0e0;
+            font-size: 13px;
+            font-weight: 600;
+        }}
+
+        .loupe-title .loupe-kind {{
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+
+        .loupe-section {{
+            margin-top: 10px;
+        }}
+
+        .loupe-section-title {{
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }}
+
+        .loupe-signals {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }}
+
+        .loupe-signal {{
+            font-size: 9px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }}
+
+        .loupe-signal.input {{
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border-left: 2px solid #6366f1;
+        }}
+
+        .loupe-signal.output {{
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+            border-left: 2px solid #22c55e;
+        }}
+
+        .loupe-signal.config {{
+            background: rgba(132, 204, 22, 0.2);
+            color: #bef264;
+            border-left: 2px solid #84cc16;
+        }}
+
+        .loupe-desc {{
+            font-size: 11px;
+            color: #a0a0a0;
+            line-height: 1.4;
+        }}
+
+        .loupe-meta {{
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #0f3460;
+        }}
+
+        .loupe-meta-item {{
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            color: #666;
+        }}
+
+        .loupe-meta-item span {{
+            color: #888;
+        }}
+
+        /* Loupe color variations by kind */
+        .loupe.kind-sensor {{ border-color: #4a6fa5; }}
+        .loupe.kind-sensor .loupe-icon {{ background: #4a6fa5; }}
+        .loupe.kind-analyzer {{ border-color: #7c6b9e; }}
+        .loupe.kind-analyzer .loupe-icon {{ background: #7c6b9e; }}
+        .loupe.kind-proposer {{ border-color: #b8956e; }}
+        .loupe.kind-proposer .loupe-icon {{ background: #b8956e; }}
+        .loupe.kind-emitter {{ border-color: #a86565; }}
+        .loupe.kind-emitter .loupe-icon {{ background: #a86565; }}
+        .loupe.kind-shaper {{ border-color: #06b6d4; }}
+        .loupe.kind-shaper .loupe-icon {{ background: #06b6d4; }}
+        .loupe.kind-config {{ border-color: #84cc16; }}
+        .loupe.kind-config .loupe-icon {{ background: #84cc16; color: #1a1a2e; }}
+
+        /* Signal loupe variation */
+        .loupe.signal-loupe {{
+            min-width: 200px;
+            border-color: #6366f1;
+        }}
+
+        .loupe.signal-loupe.type-string {{ border-color: #3b82f6; }}
+        .loupe.signal-loupe.type-number {{ border-color: #22c55e; }}
+        .loupe.signal-loupe.type-boolean {{ border-color: #a855f7; }}
+        .loupe.signal-loupe.type-object {{ border-color: #f59e0b; }}
     </style>
 </head>
 <body class=""min-h-screen"" style=""background: #0f0f23;"">
@@ -574,7 +1237,7 @@ public class WorkflowBuilderMiddleware
         <div class=""px-4 py-3 flex items-center justify-between"" style=""background: linear-gradient(90deg, #16213e 0%, #1a1a2e 100%); border-bottom: 1px solid #0f3460;"">
             <div class=""flex items-center gap-4"">
                 <div class=""flex items-center gap-2"">
-                    <div class=""w-8 h-8 rounded-lg flex items-center justify-center"" style=""background: linear-gradient(135deg, #e94560 0%, #d62850 100%);"">
+                    <div class=""w-8 h-8 rounded-lg flex items-center justify-center"" style=""background: linear-gradient(135deg, #9e6b78 0%, #d62850 100%);"">
                         <svg class=""w-5 h-5 text-white"" fill=""none"" stroke=""currentColor"" viewBox=""0 0 24 24"">
                             <path stroke-linecap=""round"" stroke-linejoin=""round"" stroke-width=""2"" d=""M13 10V3L4 14h7v7l9-11h-7z""/>
                         </svg>
@@ -595,7 +1258,7 @@ public class WorkflowBuilderMiddleware
                     <svg class=""w-4 h-4"" fill=""none"" stroke=""currentColor"" viewBox=""0 0 24 24""><path stroke-linecap=""round"" stroke-linejoin=""round"" stroke-width=""2"" d=""M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z""/></svg>
                     Validate
                 </button>
-                <button class=""btn btn-sm"" style=""background: #e94560; border-color: #e94560; color: white;"" @click=""saveWorkflow()"">
+                <button class=""btn btn-sm"" style=""background: #9e6b78; border-color: #9e6b78; color: white;"" @click=""saveWorkflow()"">
                     <svg class=""w-4 h-4"" fill=""none"" stroke=""currentColor"" viewBox=""0 0 24 24""><path stroke-linecap=""round"" stroke-linejoin=""round"" stroke-width=""2"" d=""M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4""/></svg>
                     Save
                 </button>
@@ -643,7 +1306,7 @@ public class WorkflowBuilderMiddleware
                 <!-- Atoms palette -->
                 <h3 class=""text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3"">Atoms</h3>
 
-                <template x-for=""kind in ['sensor', 'analyzer', 'proposer', 'emitter']"" :key=""kind"">
+                <template x-for=""kind in ['sensor', 'analyzer', 'proposer', 'emitter', 'shaper', 'config']"" :key=""kind"">
                     <div class=""mb-4"">
                         <div class=""flex items-center gap-2 mb-2"">
                             <span class=""kind-badge"" :class=""kind"" x-text=""kind""></span>
@@ -686,8 +1349,49 @@ public class WorkflowBuilderMiddleware
                  @drop=""onDrop($event)"">
                 <div id=""drawflow"" class=""h-full""></div>
 
+                <!-- Signal Type Legend -->
+                <div class=""absolute bottom-4 left-4 p-3 rounded-lg"" style=""background: rgba(22, 33, 62, 0.95); border: 1px solid #0f3460;"">
+                    <div class=""text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"">Signal Types</div>
+                    <div class=""flex flex-col gap-1"">
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #3b82f6""></div>
+                            <span class=""text-xs text-gray-400"">string</span>
+                        </div>
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #22c55e""></div>
+                            <span class=""text-xs text-gray-400"">number</span>
+                        </div>
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #a855f7""></div>
+                            <span class=""text-xs text-gray-400"">boolean</span>
+                        </div>
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #f59e0b""></div>
+                            <span class=""text-xs text-gray-400"">object/event</span>
+                        </div>
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #84cc16""></div>
+                            <span class=""text-xs text-gray-400"">config</span>
+                        </div>
+                        <div class=""flex items-center gap-2"">
+                            <div class=""w-4 h-1 rounded"" style=""background: #6b7280""></div>
+                            <span class=""text-xs text-gray-400"">any/untyped</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Zoom controls -->
                 <div class=""absolute bottom-4 right-4 flex flex-col gap-2"">
+                    <!-- Zoom level selector -->
+                    <div class=""flex flex-col gap-1 mb-2 p-2 rounded-lg"" style=""background: #16213e; border: 1px solid #0f3460;"">
+                        <template x-for=""level in zoomLevels"" :key=""level"">
+                            <button class=""btn btn-xs""
+                                    :class=""zoomLevel === level ? 'btn-primary' : 'btn-ghost text-gray-400'""
+                                    @click=""setZoomLevel(level)"">
+                                <span class=""zoom-level-badge"" :class=""level"" x-text=""level""></span>
+                            </button>
+                        </template>
+                    </div>
                     <button class=""btn btn-sm btn-circle"" style=""background: #16213e; border-color: #0f3460;"" @click=""zoomIn()"">
                         <svg class=""w-4 h-4 text-white"" fill=""none"" stroke=""currentColor"" viewBox=""0 0 24 24""><path stroke-linecap=""round"" stroke-linejoin=""round"" stroke-width=""2"" d=""M12 6v6m0 0v6m0-6h6m-6 0H6""/></svg>
                     </button>
@@ -828,9 +1532,153 @@ public class WorkflowBuilderMiddleware
         </div>
 
         <!-- Toast notifications -->
-        <div class=""toast toast-end toast-bottom"" x-show=""toast.show"" x-transition
+        <div class=""toast toast-end toast-bottom"" x-show=""toast.show"" x-transition>
             <div class=""alert"" :class=""toast.type === 'success' ? 'alert-success' : toast.type === 'error' ? 'alert-error' : 'alert-info'"">
                 <span x-text=""toast.message""></span>
+            </div>
+        </div>
+
+        <!-- Context menu for nodes/connections -->
+        <div x-show=""contextMenu.show""
+             x-transition
+             class=""context-menu""
+             :style=""`left: ${{contextMenu.x}}px; top: ${{contextMenu.y}}px`""
+             @click.away=""contextMenu.show = false"">
+            <template x-if=""contextMenu.type === 'node'"">
+                <div>
+                    <div class=""context-menu-item"" @click=""addInhibitorFromNode()"">
+                        <span>⊘</span> Add Inhibitor Signal
+                    </div>
+                    <div class=""context-menu-item"" @click=""duplicateNode()"">
+                        <span>📋</span> Duplicate Node
+                    </div>
+                    <div class=""context-menu-divider""></div>
+                    <div class=""context-menu-item danger"" @click=""deleteContextNode()"">
+                        <span>🗑️</span> Delete Node
+                    </div>
+                </div>
+            </template>
+            <template x-if=""contextMenu.type === 'connection'"">
+                <div>
+                    <div class=""context-menu-item"" @click=""toggleInhibitor()"">
+                        <span>⊘</span> Toggle Inhibitor
+                    </div>
+                    <div class=""context-menu-item"" @click=""insertAdapterContextMenu()"">
+                        <span>🔄</span> Insert Adapter
+                    </div>
+                    <div class=""context-menu-divider""></div>
+                    <div class=""context-menu-item danger"" @click=""deleteConnection()"">
+                        <span>✂️</span> Remove Connection
+                    </div>
+                </div>
+            </template>
+            <template x-if=""contextMenu.type === 'canvas'"">
+                <div>
+                    <div class=""context-menu-item"" @click=""addNodeAtPosition('sensor')"">
+                        <span>📡</span> Add Sensor
+                    </div>
+                    <div class=""context-menu-item"" @click=""addNodeAtPosition('analyzer')"">
+                        <span>🔬</span> Add Analyzer
+                    </div>
+                    <div class=""context-menu-item"" @click=""addNodeAtPosition('proposer')"">
+                        <span>⚖️</span> Add Proposer
+                    </div>
+                    <div class=""context-menu-item"" @click=""addNodeAtPosition('emitter')"">
+                        <span>📤</span> Add Emitter
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Adapter Panel Popup -->
+        <div x-show=""adapterPanel.show""
+             x-transition
+             class=""adapter-panel""
+             :style=""`left: ${{adapterPanel.x}}px; top: ${{adapterPanel.y}}px`""
+             @click.away=""adapterPanel.show = false"">
+            <div class=""adapter-panel-header"">
+                <span>🔄</span>
+                <h4>Signal Adapter</h4>
+            </div>
+            <div class=""adapter-panel-body"">
+                <div class=""adapter-signal-pair"">
+                    <span class=""adapter-signal source"" x-text=""adapterPanel.source""></span>
+                    <span class=""adapter-arrow"">→</span>
+                    <span class=""adapter-signal target"" x-text=""adapterPanel.target""></span>
+                </div>
+                <div class=""adapter-type-info"">
+                    <span>Type:</span>
+                    <span class=""adapter-type-badge"" :class=""adapterPanel.sourceType"" x-text=""adapterPanel.sourceType""></span>
+                    <span>→</span>
+                    <span class=""adapter-type-badge"" :class=""adapterPanel.targetType"" x-text=""adapterPanel.targetType""></span>
+                </div>
+                <div class=""adapter-options"">
+                    <template x-for=""opt in adapterPanel.options"" :key=""opt.name"">
+                        <div class=""adapter-option"" :class=""{{ 'selected': adapterPanel.selected === opt.name }}"" @click=""adapterPanel.selected = opt.name"">
+                            <span class=""adapter-option-icon"" x-text=""opt.icon""></span>
+                            <div class=""adapter-option-info"">
+                                <div class=""adapter-option-name"" x-text=""opt.name""></div>
+                                <div class=""adapter-option-desc"" x-text=""opt.description""></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class=""adapter-panel-footer"">
+                <button class=""btn btn-sm btn-ghost"" @click=""adapterPanel.show = false"">Cancel</button>
+                <button class=""btn btn-sm"" style=""background: #f59e0b; border-color: #f59e0b; color: white;"" @click=""applyAdapter()"">
+                    Apply Adapter
+                </button>
+            </div>
+        </div>
+
+        <!-- Signal Drag Line SVG -->
+        <svg x-show=""signalDrag.active"" class=""signal-drag-line"" style=""position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"">
+            <line :x1=""signalDrag.startX"" :y1=""signalDrag.startY"" :x2=""signalDrag.endX"" :y2=""signalDrag.endY"" stroke=""#22c55e"" stroke-width=""3"" stroke-dasharray=""8,4"" />
+            <circle :cx=""signalDrag.endX"" :cy=""signalDrag.endY"" r=""6"" fill=""#22c55e"" />
+        </svg>
+
+        <!-- Loupe (Hover Detail Popout) -->
+        <div :class=""['loupe', 'kind-' + loupe.kind, loupe.show ? 'visible' : '', loupe.type === 'signal' ? 'signal-loupe type-' + loupe.kind : '']""
+             :style=""`left: ${{loupe.x}}px; top: ${{loupe.y}}px`"">
+            <div class=""loupe-header"">
+                <div class=""loupe-icon"" x-text=""getKindIcon(loupe.kind)""></div>
+                <div class=""loupe-title"">
+                    <h4 x-text=""loupe.name""></h4>
+                    <div class=""loupe-kind"" x-text=""loupe.type === 'signal' ? loupe.meta.direction + ' Signal' : loupe.kind""></div>
+                </div>
+            </div>
+            <p class=""loupe-desc"" x-text=""loupe.description""></p>
+
+            <template x-if=""loupe.inputSignals.length > 0"">
+                <div class=""loupe-section"">
+                    <div class=""loupe-section-title"">Requires</div>
+                    <div class=""loupe-signals"">
+                        <template x-for=""sig in loupe.inputSignals"" :key=""sig"">
+                            <span class=""loupe-signal input"" x-text=""sig""></span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if=""loupe.outputSignals.length > 0"">
+                <div class=""loupe-section"">
+                    <div class=""loupe-section-title"">Emits</div>
+                    <div class=""loupe-signals"">
+                        <template x-for=""sig in loupe.outputSignals"" :key=""sig"">
+                            <span class=""loupe-signal output"" x-text=""sig""></span>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <div class=""loupe-meta"">
+                <template x-for=""(val, key) in loupe.meta"" :key=""key"">
+                    <div class=""loupe-meta-item"">
+                        <span x-text=""key + ':'""></span>
+                        <span x-text=""val""></span>
+                    </div>
+                </template>
             </div>
         </div>
     </div>
@@ -850,6 +1698,66 @@ public class WorkflowBuilderMiddleware
                 selectedAtom: null,
                 nodeCounter: 0,
                 toast: {{ show: false, message: '', type: 'info' }},
+                // Execution state
+                isExecuting: false,
+                showExecutionPanel: false,
+                executionLogs: [],
+                signalEvents: [],
+                currentRunId: null,
+                executionStatus: null,
+                hubConnection: null,
+                // Zoom levels: atom (detailed), molecule (grouped), wave (high-level)
+                zoomLevel: 'atom',
+                zoomLevels: ['atom', 'molecule', 'wave'],
+                // Connection state for signal snapping
+                pendingConnection: null,
+                connectionValidation: null,
+                pendingAdapter: null,
+                // Context menu state
+                contextMenu: {{ show: false, x: 0, y: 0, type: null, target: null }},
+                // Inhibitor connections (signal → nodeId that it inhibits)
+                inhibitors: [],
+                pendingInhibitor: null,
+                // Signal dragging state
+                signalDrag: {{
+                    active: false,
+                    sourceNodeId: null,
+                    sourceSignal: null,
+                    sourceType: 'output',
+                    startX: 0,
+                    startY: 0,
+                    endX: 0,
+                    endY: 0
+                }},
+                // Adapter panel state
+                adapterPanel: {{
+                    show: false,
+                    x: 0,
+                    y: 0,
+                    source: '',
+                    target: '',
+                    sourceType: 'string',
+                    targetType: 'string',
+                    sourceNodeId: null,
+                    targetNodeId: null,
+                    options: [],
+                    selected: null
+                }},
+                // Loupe (hover detail) state
+                loupe: {{
+                    show: false,
+                    x: 0,
+                    y: 0,
+                    type: 'atom', // 'atom', 'signal', 'config', 'wave'
+                    kind: 'sensor',
+                    name: '',
+                    description: '',
+                    inputSignals: [],
+                    outputSignals: [],
+                    configs: [],
+                    meta: {{}}
+                }},
+                loupeTimer: null,
 
                 async init() {{
                     const container = document.getElementById('drawflow');
@@ -865,13 +1773,92 @@ public class WorkflowBuilderMiddleware
                     this.editor.on('nodeUnselected', () => {{ this.selectedNode = null; this.selectedAtom = null; }});
                     this.editor.on('nodeRemoved', (nodeId) => this.onNodeRemoved(nodeId));
 
+                    // Signal snapping: validate connections
+                    this.editor.on('connectionCreated', (conn) => this.onConnectionCreated(conn));
+                    this.editor.on('connectionRemoved', (conn) => this.onConnectionRemoved(conn));
+
+                    // Right-click context menu
+                    container.addEventListener('contextmenu', (e) => this.showContextMenu(e));
+
+                    // Signal label drag events
+                    container.addEventListener('mousedown', (e) => this.onSignalDragStart(e));
+                    document.addEventListener('mousemove', (e) => this.onSignalDragMove(e));
+                    document.addEventListener('mouseup', (e) => this.onSignalDragEnd(e));
+
+                    // Loupe hover events
+                    container.addEventListener('mouseover', (e) => this.onLoupeHoverStart(e));
+                    container.addEventListener('mouseout', (e) => this.onLoupeHoverEnd(e));
+
                     await this.loadManifests();
                     await this.loadSamples();
+                    await this.setupSignalR();
 
                     // Auto-load first sample
                     if (this.samples.length > 0) {{
                         setTimeout(() => this.loadSample(this.samples[0]), 500);
                     }}
+                }},
+
+                async setupSignalR() {{
+                    this.hubConnection = new signalR.HubConnectionBuilder()
+                        .withUrl(basePath + '/hub')
+                        .withAutomaticReconnect()
+                        .build();
+
+                    // Listen for execution logs
+                    this.hubConnection.on('ExecutionLog', (payload) => {{
+                        const parts = payload.split(':');
+                        const runId = parts[0];
+                        const nodeId = parts[1];
+                        const message = parts.slice(2).join(':');
+
+                        if (this.currentRunId && runId === this.currentRunId) {{
+                            this.addLog(nodeId, message);
+                        }}
+                    }});
+
+                    // Listen for signal events
+                    this.hubConnection.on('SignalEmitted', (payload) => {{
+                        try {{
+                            const sig = JSON.parse(payload);
+                            this.signalEvents.push(sig);
+                        }} catch (e) {{
+                            console.log('Signal:', payload);
+                        }}
+                    }});
+
+                    // Listen for workflow completion
+                    this.hubConnection.on('WorkflowComplete', (payload) => {{
+                        this.addLog('system', 'Workflow completed: ' + payload, 'complete');
+                        this.isExecuting = false;
+                        this.executionStatus = 'completed';
+                    }});
+
+                    // Listen for errors
+                    this.hubConnection.on('ExecutionError', (payload) => {{
+                        this.addLog('system', 'Error: ' + payload, 'error');
+                        this.isExecuting = false;
+                        this.executionStatus = 'failed';
+                    }});
+
+                    try {{
+                        await this.hubConnection.start();
+                        console.log('SignalR connected');
+                    }} catch (err) {{
+                        console.log('SignalR connection failed:', err);
+                    }}
+                }},
+
+                addLog(nodeId, message, type = 'info') {{
+                    const now = new Date();
+                    const timestamp = now.toLocaleTimeString('en-US', {{ hour12: false }}) + '.' + String(now.getMilliseconds()).padStart(3, '0');
+                    this.executionLogs.push({{ timestamp, nodeId, message, type }});
+
+                    // Auto-scroll to bottom
+                    this.$nextTick(() => {{
+                        const container = this.$refs.logContainer;
+                        if (container) container.scrollTop = container.scrollHeight;
+                    }});
                 }},
 
                 async loadManifests() {{
@@ -897,13 +1884,13 @@ public class WorkflowBuilderMiddleware
                     this.addNode(atomData, x, y);
                 }},
 
-                getNodeHtml(atom) {{
-                    const inputSignals = atom.requiredSignals.slice(0, 3).map(s =>
-                        `<div class=""port-label input"">${{s}}</div>`
+                getNodeHtml(atom, nodeId) {{
+                    const inputSignals = atom.requiredSignals.slice(0, 4).map(s =>
+                        `<div class=""port-label input"" data-signal=""${{s}}"" data-type=""input"" data-node-id=""${{nodeId || 'pending'}}"" draggable=""true"">${{s}}</div>`
                     ).join('');
 
-                    const outputSignals = atom.emittedSignals.slice(0, 3).map(s =>
-                        `<div class=""port-label output"">${{s}}</div>`
+                    const outputSignals = atom.emittedSignals.slice(0, 4).map(s =>
+                        `<div class=""port-label output"" data-signal=""${{s}}"" data-type=""output"" data-node-id=""${{nodeId || 'pending'}}"" draggable=""true"">${{s}}</div>`
                     ).join('');
 
                     return `
@@ -926,7 +1913,10 @@ public class WorkflowBuilderMiddleware
                         sensor: '📡',
                         analyzer: '🔬',
                         proposer: '⚖️',
-                        emitter: '📤'
+                        emitter: '📤',
+                        shaper: '🎛️',
+                        config: '⚙️',
+                        adapter: '🔄'
                     }};
                     return icons[kind] || '⚡';
                 }},
@@ -969,6 +1959,175 @@ public class WorkflowBuilderMiddleware
                         this.selectedNode = null;
                         this.selectedAtom = null;
                     }}
+                }},
+
+                // Signal snapping: check if source signals are compatible with target
+                onConnectionCreated(conn) {{
+                    const sourceNode = this.editor.getNodeFromId(conn.output_id);
+                    const targetNode = this.editor.getNodeFromId(conn.input_id);
+
+                    if (!sourceNode || !targetNode) return;
+
+                    const sourceEmits = sourceNode.data.emits || [];
+                    const targetRequires = targetNode.data.requires || [];
+
+                    // Check compatibility with type-based adaptation
+                    const adaptResult = this.checkConnectionWithAdaptation(sourceEmits, targetRequires);
+
+                    // Update connection styling based on compatibility
+                    const connElement = document.querySelector(
+                        `.connection.node_out_node-${{conn.output_id}}.node_in_node-${{conn.input_id}}`
+                    );
+
+                    if (connElement) {{
+                        // Add signal type color class
+                        const signalForColor = sourceEmits[0] || 'any';
+                        const signalType = this.getSignalType(signalForColor);
+                        const typeClass = this.getSignalTypeClass(signalType);
+                        connElement.classList.add(typeClass);
+
+                        if (adaptResult.compatible && !adaptResult.adapter) {{
+                            // Direct signal match - perfect connection
+                            connElement.classList.add('signal-matched');
+                            connElement.setAttribute('data-signal', adaptResult.source);
+                            this.showToast(`✓ Connected: ${{adaptResult.source}}`, 'success');
+                        }} else if (adaptResult.compatible && adaptResult.adapter) {{
+                            // Type-compatible but needs adapter
+                            connElement.classList.add('signal-adaptable');
+                            connElement.setAttribute('data-adapter', adaptResult.adapter.name);
+
+                            // Store pending adapter info for this connection
+                            this.pendingAdapter = {{
+                                sourceId: conn.output_id,
+                                targetId: conn.input_id,
+                                info: adaptResult
+                            }};
+
+                            // Show adapter suggestion
+                            const msg = adaptResult.rename
+                                ? `Rename: ${{adaptResult.source}} → ${{adaptResult.target}}`
+                                : `Adapt: ${{adaptResult.sourceType}} → ${{adaptResult.targetType}}`;
+
+                            this.showToast(`🔄 ${{msg}} (dblclick to insert adapter)`, 'info');
+                        }} else if (targetRequires.length === 0) {{
+                            // Target accepts any signal (like log-writer)
+                            connElement.classList.add('signal-any');
+                            this.showToast(`Connected: any → ${{targetNode.name}}`, 'info');
+                        }} else {{
+                            // Truly incompatible signals
+                            connElement.classList.add('signal-warning');
+                            this.showToast(`⚠ No compatible signals`, 'error');
+                        }}
+
+                        // Add click handler for adapter insertion
+                        connElement.addEventListener('dblclick', () => {{
+                            if (this.pendingAdapter &&
+                                this.pendingAdapter.sourceId === conn.output_id &&
+                                this.pendingAdapter.targetId === conn.input_id) {{
+                                this.insertAdapterForConnection(conn);
+                            }}
+                        }});
+                    }}
+                }},
+
+                // Get CSS class for signal type coloring
+                getSignalTypeClass(type) {{
+                    const typeMap = {{
+                        'string': 'signal-type-string',
+                        'number': 'signal-type-number',
+                        'boolean': 'signal-type-boolean',
+                        'object': 'signal-type-object',
+                        'config': 'signal-type-config'
+                    }};
+                    return typeMap[type] || 'signal-type-any';
+                }},
+
+                // Insert adapter for a connection
+                async insertAdapterForConnection(conn) {{
+                    if (!this.pendingAdapter) return;
+
+                    const {{ sourceId, targetId, info }} = this.pendingAdapter;
+
+                    // Remove the direct connection
+                    this.editor.removeSingleConnection(sourceId, targetId, 'output_1', 'input_1');
+
+                    // Insert the adapter
+                    await this.insertAdapter(sourceId, targetId, info);
+
+                    this.pendingAdapter = null;
+                }},
+
+                onConnectionRemoved(conn) {{
+                    // Clean up any connection state if needed
+                }},
+
+                // Find signals that match between source and target using glob patterns
+                findCompatibleSignals(sourceEmits, targetRequires) {{
+                    const matches = [];
+                    for (const emitted of sourceEmits) {{
+                        for (const required of targetRequires) {{
+                            // Support glob patterns: * matches any segment
+                            if (this.signalMatches(emitted, required)) {{
+                                matches.push(emitted);
+                            }}
+                        }}
+                    }}
+                    return matches;
+                }},
+
+                // Check if emitted signal matches required pattern
+                signalMatches(emitted, pattern) {{
+                    // Direct match
+                    if (emitted === pattern) return true;
+
+                    // Glob pattern matching (* = any segment, ** = any depth)
+                    const patternParts = pattern.split('.');
+                    const emittedParts = emitted.split('.');
+
+                    if (patternParts.length !== emittedParts.length && !pattern.includes('**')) {{
+                        return false;
+                    }}
+
+                    for (let i = 0; i < patternParts.length; i++) {{
+                        if (patternParts[i] === '*') continue;
+                        if (patternParts[i] === '**') return true;
+                        if (patternParts[i] !== emittedParts[i]) return false;
+                    }}
+
+                    return true;
+                }},
+
+                // Highlight compatible targets when starting a connection
+                highlightCompatibleTargets(sourceNodeId) {{
+                    const sourceNode = this.editor.getNodeFromId(sourceNodeId);
+                    if (!sourceNode) return;
+
+                    const sourceEmits = sourceNode.data.emits || [];
+
+                    // Check all nodes for compatibility
+                    const exportData = this.editor.export();
+                    for (const [moduleKey, module] of Object.entries(exportData.drawflow)) {{
+                        for (const [nodeId, node] of Object.entries(module.data)) {{
+                            if (nodeId === sourceNodeId) continue;
+
+                            const targetRequires = node.data.requires || [];
+                            const compatible = this.findCompatibleSignals(sourceEmits, targetRequires);
+
+                            const nodeElement = document.querySelector(`#node-${{nodeId}}`);
+                            if (nodeElement) {{
+                                if (compatible.length > 0 || targetRequires.length === 0) {{
+                                    nodeElement.classList.add('connection-target-valid');
+                                }} else {{
+                                    nodeElement.classList.add('connection-target-invalid');
+                                }}
+                            }}
+                        }}
+                    }}
+                }},
+
+                clearTargetHighlights() {{
+                    document.querySelectorAll('.connection-target-valid, .connection-target-invalid')
+                        .forEach(el => el.classList.remove('connection-target-valid', 'connection-target-invalid'));
                 }},
 
                 deleteSelectedNode() {{
@@ -1107,6 +2266,58 @@ public class WorkflowBuilderMiddleware
                     this.showToast('Exported!', 'success');
                 }},
 
+                async executeWorkflow() {{
+                    const workflow = this.getWorkflowData();
+                    if (workflow.nodes.length === 0) {{
+                        this.showToast('Add nodes to the workflow first', 'error');
+                        return;
+                    }}
+
+                    // Clear previous execution
+                    this.executionLogs = [];
+                    this.signalEvents = [];
+                    this.executionStatus = null;
+                    this.isExecuting = true;
+                    this.showExecutionPanel = true;
+
+                    this.addLog('system', 'Starting workflow execution...');
+
+                    try {{
+                        const res = await fetch(`${{basePath}}/api/execute`, {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{
+                                workflow: workflow,
+                                input: {{
+                                    text: 'This is a sample text for analysis. The product is amazing and I love it! Great quality.'
+                                }}
+                            }})
+                        }});
+
+                        if (res.ok) {{
+                            const result = await res.json();
+                            this.currentRunId = result.runId;
+                            this.executionStatus = result.status;
+                            this.addLog('system', `Run completed with status: ${{result.status}}`, result.status === 'completed' ? 'complete' : 'error');
+
+                            // Show final signals
+                            if (result.finalSignals) {{
+                                for (const [key, value] of Object.entries(result.finalSignals)) {{
+                                    this.addLog('system', `Signal: ${{key}} = ${{JSON.stringify(value)}}`);
+                                }}
+                            }}
+                        }} else {{
+                            this.addLog('system', 'Execution failed: ' + await res.text(), 'error');
+                            this.executionStatus = 'failed';
+                        }}
+                    }} catch (err) {{
+                        this.addLog('system', 'Error: ' + err.message, 'error');
+                        this.executionStatus = 'failed';
+                    }} finally {{
+                        this.isExecuting = false;
+                    }}
+                }},
+
                 showToast(message, type = 'info') {{
                     this.toast = {{ show: true, message, type }};
                     setTimeout(() => this.toast.show = false, 3000);
@@ -1114,7 +2325,759 @@ public class WorkflowBuilderMiddleware
 
                 zoomIn() {{ this.editor.zoom_in(); }},
                 zoomOut() {{ this.editor.zoom_out(); }},
-                resetZoom() {{ this.editor.zoom_reset(); }}
+                resetZoom() {{ this.editor.zoom_reset(); }},
+
+                // Zoom level changes view abstraction
+                setZoomLevel(level) {{
+                    this.zoomLevel = level;
+                    const container = document.getElementById('drawflow');
+
+                    container.classList.remove('atom-view', 'molecule-view', 'wave-view');
+                    container.classList.add(`${{level}}-view`);
+
+                    if (level === 'wave') {{
+                        this.editor.zoom_out();
+                        this.editor.zoom_out();
+                    }} else if (level === 'molecule') {{
+                        this.editor.zoom_reset();
+                    }} else {{
+                        this.editor.zoom_reset();
+                    }}
+
+                    this.showToast(`View: ${{level}}`, 'info');
+                }},
+
+                // ==========================================
+                // AUTO-ADAPTERS: Type-based signal conversion
+                // ==========================================
+
+                // Signal type registry - infer type from signal name patterns
+                signalTypes: {{
+                    // Text/String types
+                    'text.*': 'string',
+                    'http.body': 'string',
+                    'http.path': 'string',
+                    'http.method': 'string',
+                    'log.*': 'string',
+                    'email.*': 'string',
+                    'sentiment.label': 'string',
+
+                    // Numeric types
+                    'sentiment.score': 'number',
+                    'sentiment.confidence': 'number',
+                    'text.word_count': 'number',
+                    'text.char_count': 'number',
+                    'filter.value': 'number',
+
+                    // Boolean types
+                    'filter.passed': 'boolean',
+                    'filter.exceeded': 'boolean',
+                    'filter.action_required': 'boolean',
+                    'sentiment.is_positive': 'boolean',
+
+                    // Object types
+                    'http.received': 'object',
+                    'timer.triggered': 'object'
+                }},
+
+                // Get inferred type for a signal
+                getSignalType(signal) {{
+                    // Direct match
+                    if (this.signalTypes[signal]) return this.signalTypes[signal];
+
+                    // Pattern match
+                    for (const [pattern, type] of Object.entries(this.signalTypes)) {{
+                        if (this.signalMatches(signal, pattern)) return type;
+                    }}
+
+                    // Default to string
+                    return 'string';
+                }},
+
+                // Check if two signal types are adaptable
+                areTypesAdaptable(sourceType, targetType) {{
+                    if (sourceType === targetType) return true;
+
+                    // Adaptable type pairs
+                    const adaptable = {{
+                        'number': ['string', 'boolean'],
+                        'string': ['number', 'boolean'],
+                        'boolean': ['string', 'number'],
+                        'object': ['string']
+                    }};
+
+                    return adaptable[sourceType]?.includes(targetType) || false;
+                }},
+
+                // Get adapter for type conversion
+                getAdapter(sourceType, targetType) {{
+                    const adapters = {{
+                        'number→string': {{ name: 'format-number', description: 'Formats number as string' }},
+                        'string→number': {{ name: 'parse-number', description: 'Parses string to number' }},
+                        'boolean→string': {{ name: 'format-bool', description: 'Formats boolean as string' }},
+                        'string→boolean': {{ name: 'parse-bool', description: 'Parses string to boolean' }},
+                        'object→string': {{ name: 'json-stringify', description: 'Serializes object to JSON string' }},
+                        'number→boolean': {{ name: 'number-to-bool', description: 'Non-zero = true' }}
+                    }};
+                    return adapters[`${{sourceType}}→${{targetType}}`];
+                }},
+
+                // Check connection compatibility with type adaptation
+                checkConnectionWithAdaptation(sourceEmits, targetRequires) {{
+                    for (const emitted of sourceEmits) {{
+                        for (const required of targetRequires) {{
+                            const sourceType = this.getSignalType(emitted);
+                            const targetType = this.getSignalType(required);
+
+                            // Direct signal match
+                            if (this.signalMatches(emitted, required)) {{
+                                return {{ compatible: true, adapter: null, source: emitted, target: required }};
+                            }}
+
+                            // Type-compatible but different names - need adapter
+                            if (sourceType === targetType) {{
+                                return {{
+                                    compatible: true,
+                                    adapter: {{ name: 'signal-rename', description: `Renames ${{emitted}} → ${{required}}` }},
+                                    source: emitted,
+                                    target: required,
+                                    rename: true
+                                }};
+                            }}
+
+                            // Different types but adaptable
+                            if (this.areTypesAdaptable(sourceType, targetType)) {{
+                                const adapter = this.getAdapter(sourceType, targetType);
+                                return {{
+                                    compatible: true,
+                                    adapter,
+                                    source: emitted,
+                                    target: required,
+                                    sourceType,
+                                    targetType
+                                }};
+                            }}
+                        }}
+                    }}
+
+                    return {{ compatible: false }};
+                }},
+
+                // Insert adapter node between two nodes
+                async insertAdapter(sourceNodeId, targetNodeId, adapterInfo) {{
+                    // Get positions
+                    const sourceNode = this.editor.getNodeFromId(sourceNodeId);
+                    const targetNode = this.editor.getNodeFromId(targetNodeId);
+
+                    if (!sourceNode || !targetNode) return;
+
+                    const midX = (sourceNode.pos_x + targetNode.pos_x) / 2;
+                    const midY = (sourceNode.pos_y + targetNode.pos_y) / 2;
+
+                    // Create adapter node
+                    const adapterId = ++this.nodeCounter;
+                    const adapterHtml = `
+                        <div class=""kind-adapter"">
+                            <div class=""node-header"" style=""background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);"">
+                                <span class=""icon"">🔄</span>
+                                <span>${{adapterInfo.adapter.name}}</span>
+                            </div>
+                            <div class=""node-body"">${{adapterInfo.adapter.description}}</div>
+                            <div class=""signal-ports"">
+                                <div class=""port-group inputs""><div class=""port-label input"">${{adapterInfo.source}}</div></div>
+                                <div class=""port-group outputs""><div class=""port-label output"">${{adapterInfo.target}}</div></div>
+                            </div>
+                        </div>
+                    `;
+
+                    this.editor.addNode(
+                        adapterInfo.adapter.name,
+                        1, 1,
+                        midX, midY,
+                        'kind-adapter',
+                        {{
+                            manifest: 'adapter',
+                            emits: [adapterInfo.target],
+                            requires: [adapterInfo.source],
+                            adapterConfig: adapterInfo
+                        }},
+                        adapterHtml
+                    );
+
+                    // Remove old connection
+                    // Add source → adapter connection
+                    this.editor.addConnection(sourceNodeId, adapterId, 'output_1', 'input_1');
+                    // Add adapter → target connection
+                    this.editor.addConnection(adapterId, targetNodeId, 'output_1', 'input_1');
+
+                    this.showToast(`Inserted adapter: ${{adapterInfo.adapter.name}}`, 'success');
+                }},
+
+                // ==========================================
+                // CONTEXT MENU & INHIBITORS
+                // ==========================================
+
+                showContextMenu(e) {{
+                    e.preventDefault();
+
+                    // Check what was right-clicked
+                    const nodeEl = e.target.closest('.drawflow-node');
+                    const connEl = e.target.closest('.connection');
+
+                    if (nodeEl) {{
+                        const nodeId = nodeEl.id.replace('node-', '');
+                        this.contextMenu = {{
+                            show: true,
+                            x: e.clientX,
+                            y: e.clientY,
+                            type: 'node',
+                            target: nodeId
+                        }};
+                    }} else if (connEl) {{
+                        this.contextMenu = {{
+                            show: true,
+                            x: e.clientX,
+                            y: e.clientY,
+                            type: 'connection',
+                            target: connEl
+                        }};
+                    }} else {{
+                        // Canvas right-click
+                        this.contextMenu = {{
+                            show: true,
+                            x: e.clientX,
+                            y: e.clientY,
+                            type: 'canvas',
+                            target: {{ x: e.clientX, y: e.clientY }}
+                        }};
+                    }}
+                }},
+
+                // Add inhibitor from a node's output
+                addInhibitorFromNode() {{
+                    const nodeId = this.contextMenu.target;
+                    const node = this.editor.getNodeFromId(nodeId);
+
+                    if (node) {{
+                        this.showToast(`Click target node to add inhibitor from ${{node.name}}`, 'info');
+
+                        // Store pending inhibitor source
+                        this.pendingInhibitor = {{
+                            sourceId: nodeId,
+                            sourceSignals: node.data.emits || []
+                        }};
+
+                        // Highlight potential targets
+                        document.querySelectorAll('.drawflow-node').forEach(el => {{
+                            if (el.id !== `node-${{nodeId}}`) {{
+                                el.classList.add('inhibitor-target');
+                                el.addEventListener('click', this.completeInhibitor.bind(this), {{ once: true }});
+                            }}
+                        }});
+                    }}
+
+                    this.contextMenu.show = false;
+                }},
+
+                completeInhibitor(e) {{
+                    if (!this.pendingInhibitor) return;
+
+                    const targetEl = e.target.closest('.drawflow-node');
+                    if (!targetEl) return;
+
+                    const targetId = targetEl.id.replace('node-', '');
+                    const sourceId = this.pendingInhibitor.sourceId;
+
+                    // Add inhibitor connection
+                    this.inhibitors.push({{
+                        sourceId,
+                        targetId,
+                        signal: this.pendingInhibitor.sourceSignals[0] || 'any'
+                    }});
+
+                    // Draw inhibitor connection (visual only)
+                    this.drawInhibitorConnection(sourceId, targetId);
+
+                    this.showToast(`⊘ Inhibitor added: blocks ${{targetId}} when source fires`, 'success');
+
+                    // Clean up
+                    document.querySelectorAll('.inhibitor-target').forEach(el => {{
+                        el.classList.remove('inhibitor-target');
+                    }});
+                    this.pendingInhibitor = null;
+                }},
+
+                drawInhibitorConnection(sourceId, targetId) {{
+                    // Add visual inhibitor using SVG
+                    const sourceNode = this.editor.getNodeFromId(sourceId);
+                    const targetNode = this.editor.getNodeFromId(targetId);
+
+                    if (!sourceNode || !targetNode) return;
+
+                    // Get positions
+                    const svg = document.querySelector('#drawflow svg');
+                    if (!svg) return;
+
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const x1 = sourceNode.pos_x + 110;
+                    const y1 = sourceNode.pos_y + 50;
+                    const x2 = targetNode.pos_x;
+                    const y2 = targetNode.pos_y + 50;
+
+                    // Bezier curve
+                    const midX = (x1 + x2) / 2;
+                    path.setAttribute('d', `M${{x1}},${{y1}} C${{midX}},${{y1}} ${{midX}},${{y2}} ${{x2}},${{y2}}`);
+                    path.setAttribute('class', 'inhibitor-path');
+                    path.setAttribute('stroke', '#dc2626');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('stroke-dasharray', '4,4');
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('data-inhibitor', `${{sourceId}}-${{targetId}}`);
+
+                    svg.appendChild(path);
+                }},
+
+                toggleInhibitor() {{
+                    const connEl = this.contextMenu.target;
+                    if (!connEl) return;
+
+                    connEl.classList.toggle('signal-inhibitor');
+
+                    if (connEl.classList.contains('signal-inhibitor')) {{
+                        this.showToast('⊘ Connection marked as inhibitor', 'success');
+                    }} else {{
+                        this.showToast('Connection restored to normal', 'info');
+                    }}
+
+                    this.contextMenu.show = false;
+                }},
+
+                duplicateNode() {{
+                    const nodeId = this.contextMenu.target;
+                    const node = this.editor.getNodeFromId(nodeId);
+
+                    if (node) {{
+                        const atom = this.manifests.find(m => m.name === node.name);
+                        if (atom) {{
+                            this.addNode(atom, node.pos_x + 50, node.pos_y + 50);
+                            this.showToast(`Duplicated: ${{node.name}}`, 'success');
+                        }}
+                    }}
+
+                    this.contextMenu.show = false;
+                }},
+
+                deleteContextNode() {{
+                    const nodeId = this.contextMenu.target;
+                    this.editor.removeNodeId(`node-${{nodeId}}`);
+                    this.showToast('Node deleted', 'info');
+                    this.contextMenu.show = false;
+                }},
+
+                insertAdapterContextMenu() {{
+                    // Get connection info and insert adapter
+                    if (this.pendingAdapter) {{
+                        this.insertAdapterForConnection(this.pendingAdapter);
+                    }} else {{
+                        this.showToast('No adapter available for this connection', 'error');
+                    }}
+                    this.contextMenu.show = false;
+                }},
+
+                deleteConnection() {{
+                    const connEl = this.contextMenu.target;
+                    if (connEl) {{
+                        // Parse connection info from classes
+                        const classes = connEl.className.baseVal;
+                        const outMatch = classes.match(/node_out_node-(\d+)/);
+                        const inMatch = classes.match(/node_in_node-(\d+)/);
+
+                        if (outMatch && inMatch) {{
+                            this.editor.removeSingleConnection(outMatch[1], inMatch[1], 'output_1', 'input_1');
+                            this.showToast('Connection removed', 'info');
+                        }}
+                    }}
+                    this.contextMenu.show = false;
+                }},
+
+                addNodeAtPosition(kind) {{
+                    const atom = this.manifests.find(m => m.kind === kind);
+                    if (atom) {{
+                        const rect = document.getElementById('drawflow').getBoundingClientRect();
+                        const x = this.contextMenu.target.x - rect.left;
+                        const y = this.contextMenu.target.y - rect.top;
+                        this.addNode(atom, x, y);
+                    }}
+                    this.contextMenu.show = false;
+                }},
+
+                // ==========================================
+                // SIGNAL LABEL DRAGGING
+                // ==========================================
+
+                onSignalDragStart(e) {{
+                    const portLabel = e.target.closest('.port-label[data-signal]');
+                    if (!portLabel) return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const rect = portLabel.getBoundingClientRect();
+                    const nodeEl = portLabel.closest('.drawflow-node');
+                    const nodeId = nodeEl ? nodeEl.id.replace('node-', '') : null;
+
+                    portLabel.classList.add('dragging');
+
+                    this.signalDrag = {{
+                        active: true,
+                        sourceNodeId: nodeId,
+                        sourceSignal: portLabel.dataset.signal,
+                        sourceType: portLabel.dataset.type, // 'input' or 'output'
+                        startX: rect.left + rect.width / 2,
+                        startY: rect.top + rect.height / 2,
+                        endX: e.clientX,
+                        endY: e.clientY
+                    }};
+
+                    // Highlight compatible targets
+                    this.highlightSignalTargets();
+                }},
+
+                onSignalDragMove(e) {{
+                    if (!this.signalDrag.active) return;
+
+                    this.signalDrag.endX = e.clientX;
+                    this.signalDrag.endY = e.clientY;
+
+                    // Update hover target highlighting
+                    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    const portLabel = targetEl?.closest('.port-label[data-signal]');
+
+                    document.querySelectorAll('.port-label.drop-hover').forEach(el => el.classList.remove('drop-hover'));
+                    if (portLabel && portLabel.dataset.type !== this.signalDrag.sourceType) {{
+                        portLabel.classList.add('drop-hover');
+                    }}
+                }},
+
+                onSignalDragEnd(e) {{
+                    if (!this.signalDrag.active) return;
+
+                    // Remove dragging class
+                    document.querySelectorAll('.port-label.dragging').forEach(el => el.classList.remove('dragging'));
+
+                    // Find target
+                    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    const targetPortLabel = targetEl?.closest('.port-label[data-signal]');
+
+                    if (targetPortLabel && targetPortLabel.dataset.type !== this.signalDrag.sourceType) {{
+                        const targetNodeEl = targetPortLabel.closest('.drawflow-node');
+                        const targetNodeId = targetNodeEl ? targetNodeEl.id.replace('node-', '') : null;
+                        const targetSignal = targetPortLabel.dataset.signal;
+
+                        // Determine source and target based on drag direction
+                        let sourceNodeId, targetNodeIdFinal, sourceSignal, targetSignalFinal;
+
+                        if (this.signalDrag.sourceType === 'output') {{
+                            sourceNodeId = this.signalDrag.sourceNodeId;
+                            targetNodeIdFinal = targetNodeId;
+                            sourceSignal = this.signalDrag.sourceSignal;
+                            targetSignalFinal = targetSignal;
+                        }} else {{
+                            sourceNodeId = targetNodeId;
+                            targetNodeIdFinal = this.signalDrag.sourceNodeId;
+                            sourceSignal = targetSignal;
+                            targetSignalFinal = this.signalDrag.sourceSignal;
+                        }}
+
+                        // Check compatibility and show adapter panel if needed
+                        this.handleSignalConnection(sourceNodeId, targetNodeIdFinal, sourceSignal, targetSignalFinal, e.clientX, e.clientY);
+                    }}
+
+                    // Clear highlights
+                    this.clearSignalHighlights();
+                    this.signalDrag.active = false;
+                }},
+
+                highlightSignalTargets() {{
+                    const sourceType = this.signalDrag.sourceType;
+                    const sourceSignal = this.signalDrag.sourceSignal;
+                    const sourceSignalType = this.getSignalType(sourceSignal);
+
+                    document.querySelectorAll('.port-label[data-signal]').forEach(el => {{
+                        // Skip same-type ports (output→output or input→input)
+                        if (el.dataset.type === sourceType) return;
+
+                        const targetSignal = el.dataset.signal;
+                        const targetSignalType = this.getSignalType(targetSignal);
+
+                        // Check compatibility
+                        if (this.signalMatches(sourceSignal, targetSignal)) {{
+                            el.classList.add('drop-target-valid');
+                        }} else if (sourceSignalType === targetSignalType || this.areTypesAdaptable(sourceSignalType, targetSignalType)) {{
+                            el.classList.add('drop-target-adaptable');
+                        }} else {{
+                            el.classList.add('drop-target-invalid');
+                        }}
+                    }});
+                }},
+
+                clearSignalHighlights() {{
+                    document.querySelectorAll('.port-label').forEach(el => {{
+                        el.classList.remove('drop-target-valid', 'drop-target-adaptable', 'drop-target-invalid', 'drop-hover', 'dragging');
+                    }});
+                }},
+
+                handleSignalConnection(sourceNodeId, targetNodeId, sourceSignal, targetSignal, x, y) {{
+                    const sourceType = this.getSignalType(sourceSignal);
+                    const targetType = this.getSignalType(targetSignal);
+
+                    // Direct match - create connection immediately
+                    if (this.signalMatches(sourceSignal, targetSignal)) {{
+                        this.editor.addConnection(sourceNodeId, targetNodeId, 'output_1', 'input_1');
+                        this.showToast(`✓ Connected: ${{sourceSignal}}`, 'success');
+                        return;
+                    }}
+
+                    // Same type but different names - offer rename adapter
+                    if (sourceType === targetType) {{
+                        this.showAdapterPanel(x, y, {{
+                            sourceNodeId,
+                            targetNodeId,
+                            source: sourceSignal,
+                            target: targetSignal,
+                            sourceType,
+                            targetType,
+                            options: [
+                                {{ name: 'signal-rename', icon: '📝', description: `Rename ${{sourceSignal}} → ${{targetSignal}}` }},
+                                {{ name: 'direct-connect', icon: '🔗', description: 'Connect directly (ignore names)' }}
+                            ]
+                        }});
+                        return;
+                    }}
+
+                    // Different adaptable types - offer type conversion
+                    if (this.areTypesAdaptable(sourceType, targetType)) {{
+                        const adapter = this.getAdapter(sourceType, targetType);
+                        this.showAdapterPanel(x, y, {{
+                            sourceNodeId,
+                            targetNodeId,
+                            source: sourceSignal,
+                            target: targetSignal,
+                            sourceType,
+                            targetType,
+                            options: [
+                                {{ name: adapter.name, icon: '🔄', description: adapter.description }},
+                                {{ name: 'signal-rename', icon: '📝', description: `Rename + convert` }},
+                                {{ name: 'direct-connect', icon: '🔗', description: 'Connect directly (may fail at runtime)' }}
+                            ]
+                        }});
+                        return;
+                    }}
+
+                    // Incompatible - show warning but allow forced connection
+                    this.showAdapterPanel(x, y, {{
+                        sourceNodeId,
+                        targetNodeId,
+                        source: sourceSignal,
+                        target: targetSignal,
+                        sourceType,
+                        targetType,
+                        options: [
+                            {{ name: 'force-connect', icon: '⚠️', description: 'Force connection (incompatible types)' }},
+                            {{ name: 'cancel', icon: '❌', description: 'Cancel - types are incompatible' }}
+                        ]
+                    }});
+                }},
+
+                showAdapterPanel(x, y, config) {{
+                    this.adapterPanel = {{
+                        show: true,
+                        x: Math.min(x, window.innerWidth - 360),
+                        y: Math.min(y, window.innerHeight - 300),
+                        source: config.source,
+                        target: config.target,
+                        sourceType: config.sourceType,
+                        targetType: config.targetType,
+                        sourceNodeId: config.sourceNodeId,
+                        targetNodeId: config.targetNodeId,
+                        options: config.options,
+                        selected: config.options[0]?.name
+                    }};
+                }},
+
+                applyAdapter() {{
+                    const {{ sourceNodeId, targetNodeId, source, target, sourceType, targetType, selected }} = this.adapterPanel;
+
+                    if (selected === 'cancel') {{
+                        this.adapterPanel.show = false;
+                        return;
+                    }}
+
+                    if (selected === 'direct-connect' || selected === 'force-connect') {{
+                        // Direct connection without adapter
+                        this.editor.addConnection(sourceNodeId, targetNodeId, 'output_1', 'input_1');
+                        this.showToast(`Connected: ${{source}} → ${{target}}`, 'success');
+                    }} else {{
+                        // Insert adapter node
+                        this.insertAdapter(sourceNodeId, targetNodeId, {{
+                            adapter: {{ name: selected, description: `${{sourceType}} → ${{targetType}}` }},
+                            source,
+                            target,
+                            sourceType,
+                            targetType
+                        }});
+                    }}
+
+                    this.adapterPanel.show = false;
+                }},
+
+                // ==========================================
+                // LOUPE (HOVER DETAIL POPOUT)
+                // ==========================================
+
+                onLoupeHoverStart(e) {{
+                    // Don't show loupe while dragging
+                    if (this.signalDrag.active) return;
+
+                    // Check what we're hovering over
+                    const node = e.target.closest('.drawflow-node');
+                    const portLabel = e.target.closest('.port-label[data-signal]');
+                    const paletteItem = e.target.closest('.palette-item');
+
+                    clearTimeout(this.loupeTimer);
+
+                    if (portLabel) {{
+                        // Signal label hover
+                        this.loupeTimer = setTimeout(() => {{
+                            this.showSignalLoupe(portLabel, e);
+                        }}, 400);
+                    }} else if (node) {{
+                        // Node hover
+                        this.loupeTimer = setTimeout(() => {{
+                            this.showNodeLoupe(node, e);
+                        }}, 500);
+                    }} else if (paletteItem) {{
+                        // Palette item hover
+                        this.loupeTimer = setTimeout(() => {{
+                            this.showPaletteLoupe(paletteItem, e);
+                        }}, 400);
+                    }}
+                }},
+
+                onLoupeHoverEnd(e) {{
+                    clearTimeout(this.loupeTimer);
+                    this.loupe.show = false;
+                }},
+
+                showSignalLoupe(portLabel, e) {{
+                    const signal = portLabel.dataset.signal;
+                    const isInput = portLabel.dataset.type === 'input';
+                    const signalType = this.getSignalType(signal);
+
+                    const rect = portLabel.getBoundingClientRect();
+
+                    this.loupe = {{
+                        show: true,
+                        x: Math.min(rect.right + 10, window.innerWidth - 280),
+                        y: Math.max(10, rect.top - 30),
+                        type: 'signal',
+                        kind: signalType,
+                        name: signal,
+                        description: isInput
+                            ? 'This signal is required to trigger the atom'
+                            : 'This signal is emitted when the atom completes',
+                        inputSignals: [],
+                        outputSignals: [],
+                        configs: [],
+                        meta: {{
+                            direction: isInput ? 'Input' : 'Output',
+                            dataType: this.getSignalTypeLabel(signalType)
+                        }}
+                    }};
+                }},
+
+                showNodeLoupe(nodeEl, e) {{
+                    const nodeId = nodeEl.id.replace('node-', '');
+                    const nodeData = this.editor.getNodeFromId(nodeId);
+                    if (!nodeData || !nodeData.data) return;
+
+                    const atomData = nodeData.data;
+                    const manifest = this.manifests.find(m => m.name === atomData.manifest);
+                    if (!manifest) return;
+
+                    const rect = nodeEl.getBoundingClientRect();
+
+                    this.loupe = {{
+                        show: true,
+                        x: Math.min(rect.right + 10, window.innerWidth - 280),
+                        y: Math.max(10, rect.top),
+                        type: 'atom',
+                        kind: manifest.kind?.toLowerCase() || 'sensor',
+                        name: manifest.name,
+                        description: manifest.description || 'No description available',
+                        inputSignals: manifest.requiredSignals || [],
+                        outputSignals: manifest.emittedSignals || [],
+                        configs: [], // Would come from manifest if defined
+                        meta: {{
+                            kind: manifest.kind || 'Unknown',
+                            determinism: manifest.determinism || 'Unknown',
+                            persistence: manifest.persistence || 'Unknown'
+                        }}
+                    }};
+                }},
+
+                showPaletteLoupe(paletteItem, e) {{
+                    const manifestName = paletteItem.dataset.manifest;
+                    const manifest = this.manifests.find(m => m.name === manifestName);
+                    if (!manifest) return;
+
+                    const rect = paletteItem.getBoundingClientRect();
+
+                    this.loupe = {{
+                        show: true,
+                        x: Math.min(rect.right + 10, window.innerWidth - 280),
+                        y: Math.max(10, rect.top),
+                        type: 'atom',
+                        kind: manifest.kind?.toLowerCase() || 'sensor',
+                        name: manifest.name,
+                        description: manifest.description || 'Drag onto canvas to add',
+                        inputSignals: manifest.requiredSignals || [],
+                        outputSignals: manifest.emittedSignals || [],
+                        configs: [],
+                        meta: {{
+                            kind: manifest.kind || 'Unknown',
+                            determinism: manifest.determinism || 'Unknown',
+                            persistence: manifest.persistence || 'Unknown'
+                        }}
+                    }};
+                }},
+
+                getSignalTypeLabel(type) {{
+                    const labels = {{
+                        'string': 'String',
+                        'number': 'Number',
+                        'boolean': 'Boolean',
+                        'object': 'Object',
+                        'config': 'Config',
+                        'any': 'Any'
+                    }};
+                    return labels[type] || 'Unknown';
+                }},
+
+                getKindIcon(kind) {{
+                    const icons = {{
+                        'sensor': '📡',
+                        'analyzer': '🔬',
+                        'extractor': '🔬',
+                        'proposer': '🎯',
+                        'constrainer': '🛡️',
+                        'emitter': '📤',
+                        'renderer': '📤',
+                        'shaper': '🎛️',
+                        'config': '⚙️'
+                    }};
+                    return icons[kind?.toLowerCase()] || '📦';
+                }}
             }};
         }}
     </script>

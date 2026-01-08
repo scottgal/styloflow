@@ -1,0 +1,66 @@
+# Keyed Coordinator - Per-key sequential execution (uses EphemeralKeyedWorkCoordinator)
+name: coordinator-keyed
+
+runtime:
+  type: Mostlylucid.Ephemeral.Atoms.Taxonomy.CoordinatorAtom
+description: Per-key sequential execution with fair scheduling (spawns child coordinators)
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: coordinator
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: any
+      description: Work items with key field
+
+output:
+  produces:
+    - type: any
+      description: Processed work items
+  signals:
+    - key: coordinator.spawned
+      entityType: string
+      salience: 1.0
+      description: Emitted when new keyed coordinator is spawned
+    - key: coordinator.output
+      entityType: any
+      salience: 0.9
+      description: Output from keyed processing
+    - key: coordinator.completed
+      entityType: bool
+      salience: 0.8
+      description: Emitted when all work for a key completes
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any signal triggers coordination
+
+emits:
+  onComplete:
+    - key: coordinator.spawned
+      type: string
+      description: Key identifier for spawned coordinator
+    - key: coordinator.output
+      type: any
+      description: Processed result
+    - key: coordinator.completed
+      type: bool
+      description: Key processing finished
+
+defaults:
+  parameters:
+    keySelector: "$.userId"    # JSONPath to key field
+    maxConcurrency: 4          # Global concurrency limit
+    perKeySequential: true     # Sequential per-key processing
+    idleTimeout: 60000         # Ms before idle key coordinator is cleaned up
+
+tags:
+  - coordinator
+  - keyed
+  - concurrent
+  - ephemeral

@@ -1,0 +1,59 @@
+# Signal Quantizer - Snaps values to discrete steps (like pitch quantizer)
+name: signal-quantizer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalQuantizerAtom
+description: Quantizes signals to discrete step values (like pitch quantizer)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: Continuous value to quantize
+
+output:
+  produces:
+    - type: number
+      description: Quantized discrete value
+  signals:
+    - key: quantize.value
+      entityType: number
+      salience: 1.0
+      description: Quantized output value
+    - key: quantize.step
+      entityType: number
+      salience: 0.5
+      description: Which step the value snapped to
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any numeric signal
+
+emits:
+  onComplete:
+    - key: quantize.value
+      type: number
+      description: Value snapped to nearest step
+    - key: quantize.step
+      type: number
+      description: Step index (0-based)
+
+defaults:
+  parameters:
+    steps: 8
+    min: 0
+    max: 1.0
+    mode: "nearest"  # nearest, floor, ceil
+
+tags:
+  - shaper
+  - quantizer
+  - discrete
+  - modular-synth

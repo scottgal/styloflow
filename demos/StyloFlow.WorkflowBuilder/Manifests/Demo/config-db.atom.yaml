@@ -1,0 +1,71 @@
+# Database Config Source
+name: config-db
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.ConfigDbAtom
+description: Reads configuration values from database (SQL/NoSQL)
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: config
+  determinism: nondeterministic  # DB can change
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is a config source
+
+output:
+  produces:
+    - type: config.record
+      description: Configuration record from database
+  signals:
+    - key: config.loaded
+      entityType: bool
+      salience: 1.0
+      description: Emitted when config is loaded from DB
+    - key: config.value
+      entityType: string
+      salience: 0.9
+      description: The configuration value
+    - key: config.record
+      entityType: object
+      salience: 0.8
+      description: Full database record
+    - key: config.timestamp
+      entityType: string
+      salience: 0.5
+      description: When config was last updated
+
+triggers:
+  requires: []  # No triggers - this is a config source
+
+emits:
+  onComplete:
+    - key: config.loaded
+      type: bool
+      description: True when config loaded successfully
+    - key: config.value
+      type: string
+      description: Configuration value
+    - key: config.record
+      type: object
+      description: Full record from database
+    - key: config.timestamp
+      type: string
+      description: Last updated timestamp
+
+defaults:
+  parameters:
+    connectionString: ""
+    table: config
+    keyColumn: key
+    valueColumn: value
+    query: "SELECT value FROM config WHERE key = @key"
+    cacheSeconds: 300
+
+tags:
+  - config
+  - database
+  - sql
+  - source

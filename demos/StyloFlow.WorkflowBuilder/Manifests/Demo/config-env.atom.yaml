@@ -1,0 +1,60 @@
+# Environment Variable Config Source
+name: config-env
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.ConfigEnvAtom
+description: Reads configuration values from environment variables
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: config
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is a config source
+
+output:
+  produces:
+    - type: config.value
+      description: Configuration value from environment
+  signals:
+    - key: config.loaded
+      entityType: bool
+      salience: 1.0
+      description: Emitted when config is loaded
+    - key: config.value
+      entityType: string
+      salience: 0.9
+      description: The configuration value
+    - key: config.key
+      entityType: string
+      salience: 0.5
+      description: The config key that was loaded
+
+triggers:
+  requires: []  # No triggers - this is a config source
+
+emits:
+  onComplete:
+    - key: config.loaded
+      type: bool
+      description: True when config loaded successfully
+    - key: config.value
+      type: string
+      description: Configuration value
+    - key: config.key
+      type: string
+      description: Config key name
+
+defaults:
+  parameters:
+    key: MY_CONFIG_VAR
+    defaultValue: ""
+    required: false
+
+tags:
+  - config
+  - environment
+  - source

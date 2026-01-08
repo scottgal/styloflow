@@ -1,0 +1,59 @@
+# Signal Filter - Passes or blocks signals based on conditions
+name: signal-filter
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalFilterAtom
+description: Filters signals by condition (like a gate/VCA in synth terms)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: any
+      description: Signal to filter
+
+output:
+  produces:
+    - type: any
+      description: Passed signal (if condition met)
+  signals:
+    - key: filter.passed
+      entityType: any
+      salience: 1.0
+      description: Signal that passed the filter
+    - key: filter.blocked
+      entityType: bool
+      salience: 0.5
+      description: Emitted when signal was blocked
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any signal to filter
+
+emits:
+  onComplete:
+    - key: filter.passed
+      type: any
+      description: Signal if condition met
+    - key: filter.blocked
+      type: bool
+      description: True if signal was blocked
+
+defaults:
+  parameters:
+    condition: "value > 0.5"
+    operator: "gt"  # gt, lt, eq, ne, contains, matches
+    threshold: 0.5
+    passOnMatch: true
+
+tags:
+  - shaper
+  - gate
+  - conditional
+  - modular-synth

@@ -1,0 +1,72 @@
+# Secret Vault Config Source (Azure Key Vault, HashiCorp Vault, etc.)
+name: config-vault
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.ConfigVaultAtom
+description: Reads secrets from Azure Key Vault or HashiCorp Vault
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: config
+  determinism: nondeterministic  # Secrets can rotate
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is a config source
+
+output:
+  produces:
+    - type: config.secret
+      description: Secret value from vault
+  signals:
+    - key: config.loaded
+      entityType: bool
+      salience: 1.0
+      description: Emitted when secret is loaded
+    - key: config.secret
+      entityType: string
+      salience: 0.9
+      description: The secret value (handle with care!)
+    - key: config.version
+      entityType: string
+      salience: 0.5
+      description: Secret version identifier
+    - key: config.expiry
+      entityType: string
+      salience: 0.5
+      description: When secret expires
+
+triggers:
+  requires: []  # No triggers - this is a config source
+
+emits:
+  onComplete:
+    - key: config.loaded
+      type: bool
+      description: True when secret loaded successfully
+    - key: config.secret
+      type: string
+      description: Secret value (masked in logs)
+    - key: config.version
+      type: string
+      description: Secret version
+    - key: config.expiry
+      type: string
+      description: Expiration timestamp
+
+defaults:
+  parameters:
+    provider: azure  # azure, hashicorp, aws
+    vaultUrl: https://myvault.vault.azure.net
+    secretName: my-secret
+    version: latest
+    useManagedIdentity: true
+
+tags:
+  - config
+  - secrets
+  - vault
+  - azure
+  - security
+  - source

@@ -1,0 +1,59 @@
+# Signal Attenuverter - Scales and inverts signals
+name: signal-attenuverter
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalAttenuverterAtom
+description: Attenuates, amplifies, or inverts signal values
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: number
+      description: Signal to scale/invert
+
+output:
+  produces:
+    - type: number
+      description: Scaled signal
+  signals:
+    - key: atten.value
+      entityType: number
+      salience: 1.0
+      description: Scaled/inverted value
+    - key: atten.clipped
+      entityType: bool
+      salience: 0.5
+      description: True if output was clipped
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any numeric signal
+
+emits:
+  onComplete:
+    - key: atten.value
+      type: number
+      description: Scaled value (negative = inverted)
+    - key: atten.clipped
+      type: bool
+      description: Whether clipping occurred
+
+defaults:
+  parameters:
+    scale: 1.0       # -2.0 to 2.0, negative inverts
+    offset: 0.0      # Added after scaling
+    clip: true       # Clip to -1..1 range
+
+tags:
+  - shaper
+  - attenuverter
+  - scale
+  - invert
+  - modular-synth

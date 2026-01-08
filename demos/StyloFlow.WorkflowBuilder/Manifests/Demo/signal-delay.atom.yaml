@@ -1,0 +1,59 @@
+# Signal Delay - Holds/delays signals (like sample & hold in synth)
+name: signal-delay
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SignalDelayAtom
+description: Delays signal propagation or holds last value (sample & hold)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: shaper
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: any
+      description: Signal to delay
+
+output:
+  produces:
+    - type: any
+      description: Delayed signal
+  signals:
+    - key: delay.output
+      entityType: any
+      salience: 1.0
+      description: Delayed signal value
+    - key: delay.trigger
+      entityType: bool
+      salience: 0.5
+      description: Emitted when delay releases
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Any signal to delay
+
+emits:
+  onComplete:
+    - key: delay.output
+      type: any
+      description: Signal after delay
+    - key: delay.trigger
+      type: bool
+      description: Released trigger
+
+defaults:
+  parameters:
+    delayMs: 100
+    mode: "delay"  # delay, sample-hold, debounce, throttle
+    holdUntilTrigger: false
+
+tags:
+  - shaper
+  - delay
+  - sample-hold
+  - timing
+  - modular-synth
