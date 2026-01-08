@@ -1,0 +1,69 @@
+# BM25 Scorer - Best Matching 25 text relevance scoring
+name: bm25-scorer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.BM25ScorerAtom
+description: Scores documents against a query using BM25 sparse retrieval algorithm
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: documents
+      description: Documents to score
+    - type: query
+      description: Search query
+
+output:
+  produces:
+    - type: bm25.scores
+      description: Document BM25 scores
+  signals:
+    - key: bm25.scores
+      entityType: object
+      salience: 1.0
+      description: Document -> BM25 score mapping
+    - key: bm25.ranked
+      entityType: array
+      salience: 0.9
+      description: Documents ranked by score
+    - key: bm25.top_doc
+      entityType: string
+      salience: 0.8
+      description: Highest scoring document
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Documents and query
+
+emits:
+  onComplete:
+    - key: bm25.scores
+      type: object
+      description: BM25 scores
+    - key: bm25.ranked
+      type: array
+      description: Ranked documents
+    - key: bm25.top_doc
+      type: string
+      description: Top document
+
+defaults:
+  parameters:
+    window_name: documents
+    text_field: text
+    k1: 1.2
+    b: 0.75
+    top_n: 10
+
+tags:
+  - mapreduce
+  - scoring
+  - search
+  - bm25

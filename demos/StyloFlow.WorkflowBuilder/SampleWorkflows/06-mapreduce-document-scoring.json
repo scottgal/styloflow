@@ -1,0 +1,135 @@
+{
+  "id": "sample-mapreduce-scoring",
+  "name": "MapReduce Document Scoring",
+  "description": "Fetches documents, applies BM25 and TF-IDF scoring, selects top results with deduplication",
+  "nodes": [
+    {
+      "id": "api-1",
+      "manifestName": "json-api",
+      "x": 100,
+      "y": 200,
+      "config": {
+        "url": "https://test.stylobot.net/api/v1/models",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "collector-1",
+      "manifestName": "window-collector",
+      "x": 300,
+      "y": 200,
+      "config": {
+        "window_name": "documents",
+        "max_items": 100
+      }
+    },
+    {
+      "id": "dedup-1",
+      "manifestName": "deduplicator",
+      "x": 500,
+      "y": 200,
+      "config": {
+        "window_name": "documents",
+        "threshold": 0.8,
+        "algorithm": "combined"
+      }
+    },
+    {
+      "id": "bm25-1",
+      "manifestName": "bm25-scorer",
+      "x": 700,
+      "y": 100,
+      "config": {
+        "window_name": "deduplicated",
+        "text_field": "text"
+      }
+    },
+    {
+      "id": "tfidf-1",
+      "manifestName": "tfidf-scorer",
+      "x": 700,
+      "y": 300,
+      "config": {
+        "window_name": "deduplicated",
+        "text_field": "text"
+      }
+    },
+    {
+      "id": "rrf-1",
+      "manifestName": "rrf-scorer",
+      "x": 900,
+      "y": 200,
+      "config": {
+        "k": 60,
+        "top_n": 10
+      }
+    },
+    {
+      "id": "topk-1",
+      "manifestName": "topk-selector",
+      "x": 1100,
+      "y": 200,
+      "config": {
+        "k": 5,
+        "score_field": "score"
+      }
+    },
+    {
+      "id": "log-1",
+      "manifestName": "log-writer",
+      "x": 1300,
+      "y": 200,
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "api-1",
+      "signalKey": "api.data",
+      "targetNodeId": "collector-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "dedup-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "dedup-1",
+      "signalKey": "dedup.unique",
+      "targetNodeId": "bm25-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "dedup-1",
+      "signalKey": "dedup.unique",
+      "targetNodeId": "tfidf-1"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "bm25-1",
+      "signalKey": "bm25.scores",
+      "targetNodeId": "rrf-1"
+    },
+    {
+      "id": "e6",
+      "sourceNodeId": "tfidf-1",
+      "signalKey": "tfidf.scores",
+      "targetNodeId": "rrf-1"
+    },
+    {
+      "id": "e7",
+      "sourceNodeId": "rrf-1",
+      "signalKey": "rrf.ranked",
+      "targetNodeId": "topk-1"
+    },
+    {
+      "id": "e8",
+      "sourceNodeId": "topk-1",
+      "signalKey": "topk.selected",
+      "targetNodeId": "log-1"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using StyloFlow.Configuration;
 using StyloFlow.Entities;
 using StyloFlow.Manifests;
+using StyloFlow.Modules;
 
 namespace StyloFlow;
 
@@ -165,6 +166,66 @@ public static class DependencyInjection
                 }
             }
         });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Add a StyloFlow module to the service collection.
+    /// </summary>
+    public static IServiceCollection AddStyloFlowModule<TModule>(
+        this IServiceCollection services,
+        IStyloflowModuleContext? context = null)
+        where TModule : class, IStyloflowModule, new()
+    {
+        var module = new TModule();
+        return services.AddStyloFlowModule(module, context);
+    }
+
+    /// <summary>
+    /// Add a StyloFlow module instance to the service collection.
+    /// </summary>
+    public static IServiceCollection AddStyloFlowModule(
+        this IServiceCollection services,
+        IStyloflowModule module,
+        IStyloflowModuleContext? context = null)
+    {
+        context ??= new StyloflowModuleContext();
+
+        // Register the module itself
+        services.AddSingleton(module);
+
+        // Let the module configure its services
+        module.ConfigureServices(services, context);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Add multiple StyloFlow modules from assemblies.
+    /// Scans for types implementing IStyloflowModule.
+    /// </summary>
+    public static IServiceCollection AddStyloFlowModulesFromAssemblies(
+        this IServiceCollection services,
+        Assembly[] assemblies,
+        IStyloflowModuleContext? context = null)
+    {
+        context ??= new StyloflowModuleContext();
+
+        foreach (var assembly in assemblies)
+        {
+            var moduleTypes = assembly.GetTypes()
+                .Where(t => !t.IsAbstract &&
+                            !t.IsInterface &&
+                            typeof(IStyloflowModule).IsAssignableFrom(t) &&
+                            t.GetConstructor(Type.EmptyTypes) != null);
+
+            foreach (var moduleType in moduleTypes)
+            {
+                var module = (IStyloflowModule)Activator.CreateInstance(moduleType)!;
+                services.AddStyloFlowModule(module, context);
+            }
+        }
 
         return services;
     }

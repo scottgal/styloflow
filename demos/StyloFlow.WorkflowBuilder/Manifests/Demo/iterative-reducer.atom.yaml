@@ -1,0 +1,73 @@
+# Iterative Reducer - Reduces until target count reached
+name: iterative-reducer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.IterativeReducerAtom
+description: Iteratively reduces window items until target_count remains (50->10->5)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: items
+      description: Items to reduce iteratively
+
+output:
+  produces:
+    - type: reduce.results
+      description: Final reduced items
+  signals:
+    - key: reduce.results
+      entityType: array
+      salience: 1.0
+      description: Final item keys
+    - key: reduce.iterations
+      entityType: int
+      salience: 0.7
+      description: Reduction iterations
+    - key: reduce.final_count
+      entityType: int
+      salience: 0.8
+      description: Final item count
+    - key: reduce.reduction_ratio
+      entityType: number
+      salience: 0.6
+      description: Reduction ratio
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Items to reduce
+
+emits:
+  onComplete:
+    - key: reduce.results
+      type: array
+      description: Final items
+    - key: reduce.iterations
+      type: int
+      description: Iterations used
+    - key: reduce.final_count
+      type: int
+      description: Final count
+    - key: reduce.reduction_ratio
+      type: number
+      description: Reduction ratio
+
+defaults:
+  parameters:
+    window_name: accumulator
+    target_count: 5
+    batch_size: 10
+    operation: avg
+    score_field: score
+
+tags:
+  - mapreduce
+  - reducer
+  - iterative

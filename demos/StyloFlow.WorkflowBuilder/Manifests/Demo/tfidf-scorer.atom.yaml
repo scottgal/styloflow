@@ -1,0 +1,65 @@
+# TF-IDF Scorer - Term Frequency-Inverse Document Frequency
+name: tfidf-scorer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.TfIdfScorerAtom
+description: Computes TF-IDF scores to identify distinctive terms in documents
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: documents
+      description: Documents for TF-IDF analysis
+
+output:
+  produces:
+    - type: tfidf.scores
+      description: Term TF-IDF scores
+  signals:
+    - key: tfidf.scores
+      entityType: object
+      salience: 1.0
+      description: Term -> TF-IDF score mapping
+    - key: tfidf.top_terms
+      entityType: array
+      salience: 0.9
+      description: Top distinctive terms
+    - key: tfidf.document_count
+      entityType: int
+      salience: 0.6
+      description: Documents analyzed
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Documents to analyze
+
+emits:
+  onComplete:
+    - key: tfidf.scores
+      type: object
+      description: TF-IDF scores
+    - key: tfidf.top_terms
+      type: array
+      description: Top terms
+    - key: tfidf.document_count
+      type: int
+      description: Document count
+
+defaults:
+  parameters:
+    window_name: documents
+    text_field: text
+    top_n: 10
+
+tags:
+  - mapreduce
+  - scoring
+  - tfidf
+  - nlp

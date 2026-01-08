@@ -1,0 +1,89 @@
+{
+  "id": "sample-conditional-router",
+  "name": "Conditional Router",
+  "description": "Routes signals based on threshold conditions to different outputs",
+  "nodes": [
+    {
+      "id": "http-1",
+      "manifestName": "http-receiver",
+      "x": 100,
+      "y": 250,
+      "config": {}
+    },
+    {
+      "id": "analyzer-1",
+      "manifestName": "text-analyzer",
+      "x": 350,
+      "y": 250,
+      "config": {}
+    },
+    {
+      "id": "sentiment-1",
+      "manifestName": "sentiment-detector",
+      "x": 600,
+      "y": 250,
+      "config": {}
+    },
+    {
+      "id": "router-1",
+      "manifestName": "signal-router",
+      "x": 850,
+      "y": 250,
+      "config": {
+        "mode": "threshold",
+        "threshold": 0.5,
+        "signal_key": "sentiment.score"
+      }
+    },
+    {
+      "id": "log-high",
+      "manifestName": "log-writer",
+      "x": 1100,
+      "y": 150,
+      "config": {
+        "prefix": "HIGH SENTIMENT"
+      }
+    },
+    {
+      "id": "log-low",
+      "manifestName": "log-writer",
+      "x": 1100,
+      "y": 350,
+      "config": {
+        "prefix": "LOW SENTIMENT"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "http-1",
+      "signalKey": "http.body",
+      "targetNodeId": "analyzer-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "analyzer-1",
+      "signalKey": "text.analyzed",
+      "targetNodeId": "sentiment-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "sentiment-1",
+      "signalKey": "sentiment.score",
+      "targetNodeId": "router-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "router-1",
+      "signalKey": "router.above",
+      "targetNodeId": "log-high"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "router-1",
+      "signalKey": "router.below",
+      "targetNodeId": "log-low"
+    }
+  ]
+}

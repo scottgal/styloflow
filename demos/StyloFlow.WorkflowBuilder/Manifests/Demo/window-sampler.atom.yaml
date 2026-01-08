@@ -1,0 +1,21 @@
+name: window-sampler
+version: 1.0.0
+description: Takes random samples from a sliding window for behavioral analysis
+
+taxonomy:
+  kind: analyzer
+  determinism: deterministic
+  persistence: ephemeral
+
+signals:
+  reads:
+    - "*"
+  writes:
+    - sample.entries
+    - sample.count
+    - sample.window_size
+
+defaults:
+  window_name: "default"
+  sample_count: 5           # Number of entries to sample
+  unprocessed_only: false   # Only sample unprocessed entries

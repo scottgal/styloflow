@@ -1,0 +1,69 @@
+# JSON API - Fetches and parses JSON from APIs
+name: json-api
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.Fetchers.JsonApiFetcherAtom
+description: Fetches JSON from REST APIs with field extraction and auth support
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: sensor
+  determinism: non-deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: string
+      description: API URL to fetch
+
+output:
+  produces:
+    - type: json
+      description: Parsed JSON response
+  signals:
+    - key: api.data
+      entityType: object
+      salience: 1.0
+      description: Parsed JSON data
+    - key: api.items
+      entityType: array
+      salience: 0.9
+      description: Array of items if response is array
+    - key: api.count
+      entityType: int
+      salience: 0.7
+      description: Number of items
+
+triggers:
+  requires: []  # Can be entry point
+
+emits:
+  onComplete:
+    - key: api.data
+      type: object
+      description: Parsed JSON response
+    - key: api.items
+      type: array
+      description: Items if array response
+    - key: api.count
+      type: int
+      description: Item count
+    - key: api.success
+      type: bool
+      description: Success indicator
+    - key: api.error
+      type: string
+      description: Error message if failed
+
+defaults:
+  parameters:
+    method: GET
+    timeout_seconds: 30
+    data_path: ""
+
+tags:
+  - fetcher
+  - api
+  - json
+  - rest

@@ -9,6 +9,36 @@ namespace StyloFlow.WorkflowBuilder.Services;
 public class InMemoryWorkflowStore : IWorkflowStore
 {
     private readonly ConcurrentDictionary<string, WorkflowDefinition> _workflows = new();
+    private bool _samplesLoaded;
+
+    public InMemoryWorkflowStore()
+    {
+        LoadSampleWorkflows();
+    }
+
+    private void LoadSampleWorkflows()
+    {
+        if (_samplesLoaded) return;
+        _samplesLoaded = true;
+
+        // Try loading from embedded resources first
+        var samples = SampleWorkflowLoader.LoadEmbeddedSamples().ToList();
+
+        // If no embedded samples found, try file system (development mode)
+        if (samples.Count == 0)
+        {
+            var devPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "SampleWorkflows");
+            if (Directory.Exists(devPath))
+            {
+                samples = SampleWorkflowLoader.LoadFromDirectory(devPath).ToList();
+            }
+        }
+
+        foreach (var sample in samples)
+        {
+            _workflows[sample.Id] = sample;
+        }
+    }
 
     public Task<IReadOnlyList<WorkflowDefinition>> GetAllAsync()
     {

@@ -1,0 +1,26 @@
+name: window-collector
+version: 1.0.0
+description: Adds incoming signals/entities to a named sliding window for behavioral analysis
+
+taxonomy:
+  kind: sensor
+  determinism: deterministic
+  persistence: ephemeral
+
+signals:
+  reads:
+    - "*"  # Can collect from any input signal
+  writes:
+    - window.added
+    - window.count
+    - window.key
+    - window.fingerprint
+    - window.match_count
+
+defaults:
+  window_name: "default"
+  input_signal: "*"
+  key_field: ""             # Optional field to extract unique key from entity
+  fingerprint_fields: ""    # Comma-separated fields for signal fingerprinting (e.g., "ip,user_agent,path")
+  max_items: 100            # Maximum items in window
+  max_age_minutes: 10       # Maximum age of items

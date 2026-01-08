@@ -1,0 +1,105 @@
+{
+  "id": "sample-config-loading",
+  "name": "Multi-Source Config Loading",
+  "description": "Loads configuration from environment, file, and vault sources",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "manifestName": "timer-trigger",
+      "x": 100,
+      "y": 250,
+      "config": {
+        "interval_seconds": 30
+      }
+    },
+    {
+      "id": "config-env-1",
+      "manifestName": "config-env",
+      "x": 350,
+      "y": 100,
+      "config": {
+        "keys": ["API_KEY", "API_URL", "DEBUG"]
+      }
+    },
+    {
+      "id": "config-file-1",
+      "manifestName": "config-file",
+      "x": 350,
+      "y": 250,
+      "config": {
+        "path": "appsettings.json"
+      }
+    },
+    {
+      "id": "config-vault-1",
+      "manifestName": "config-vault",
+      "x": 350,
+      "y": 400,
+      "config": {
+        "path": "secret/app-secrets"
+      }
+    },
+    {
+      "id": "mixer-1",
+      "manifestName": "signal-mixer",
+      "x": 600,
+      "y": 250,
+      "config": {
+        "mode": "merge"
+      }
+    },
+    {
+      "id": "log-1",
+      "manifestName": "log-writer",
+      "x": 850,
+      "y": 250,
+      "config": {
+        "prefix": "CONFIG"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "trigger-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "config-env-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "trigger-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "config-file-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "trigger-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "config-vault-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "config-env-1",
+      "signalKey": "config.loaded",
+      "targetNodeId": "mixer-1"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "config-file-1",
+      "signalKey": "config.loaded",
+      "targetNodeId": "mixer-1"
+    },
+    {
+      "id": "e6",
+      "sourceNodeId": "config-vault-1",
+      "signalKey": "config.loaded",
+      "targetNodeId": "mixer-1"
+    },
+    {
+      "id": "e7",
+      "sourceNodeId": "mixer-1",
+      "signalKey": "mixer.output",
+      "targetNodeId": "log-1"
+    }
+  ]
+}

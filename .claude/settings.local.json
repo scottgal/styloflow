@@ -35,7 +35,9 @@
       "Bash(Select-Object -First 30 -ExpandProperty FullName)",
       "Bash(dotnet list:*)",
       "Bash(node:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(timeout /t 3 /nobreak:*)",
+      "Bash(ping:*)"
     ]
   }
 }

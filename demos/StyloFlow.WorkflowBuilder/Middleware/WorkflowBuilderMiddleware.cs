@@ -972,6 +972,18 @@ public class WorkflowBuilderMiddleware
             color: #1a1a2e;
         }}
 
+        /* Coordinator atoms */
+        .kind-coordinator .node-header {{
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: #e8edf2;
+        }}
+
+        /* Router atoms */
+        .kind-router .node-header {{
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: #e8edf2;
+        }}
+
         /* Palette styling */
         .palette-item {{
             cursor: grab;
@@ -1316,12 +1328,20 @@ public class WorkflowBuilderMiddleware
                             <template x-for=""atom in manifests.filter(m => m.kind === kind)"" :key=""atom.name"">
                                 <div class=""palette-item palette-card""
                                      draggable=""true""
-                                     @dragstart=""onDragStart($event, atom)"">
+                                     :data-manifest=""atom.name""
+                                     @dragstart=""onDragStart($event, atom)""
+                                     @mouseenter=""onPaletteHover($event, atom)""
+                                     @mouseleave=""loupe.show = false""
+                                     >
                                     <div class=""palette-header"" :class=""{{
                                         'bg-blue-600': atom.kind === 'sensor',
                                         'bg-purple-600': atom.kind === 'analyzer',
                                         'bg-amber-600': atom.kind === 'proposer',
-                                        'bg-red-600': atom.kind === 'emitter'
+                                        'bg-red-600': atom.kind === 'emitter',
+                                        'bg-cyan-600': atom.kind === 'shaper',
+                                        'bg-lime-600': atom.kind === 'config',
+                                        'bg-green-600': atom.kind === 'coordinator',
+                                        'bg-orange-600': atom.kind === 'router'
                                     }}"">
                                         <span class=""text-white"" x-text=""atom.name""></span>
                                     </div>
@@ -3074,9 +3094,31 @@ public class WorkflowBuilderMiddleware
                         'emitter': '📤',
                         'renderer': '📤',
                         'shaper': '🎛️',
-                        'config': '⚙️'
+                        'config': '⚙️',
+                        'coordinator': '🎭',
+                        'router': '🔀'
                     }};
                     return icons[kind?.toLowerCase()] || '📦';
+                }},
+
+                onPaletteHover(e, atom) {{
+                    const rect = e.target.getBoundingClientRect();
+
+                    this.loupe = {{
+                        show: true,
+                        x: Math.min(rect.right + 10, window.innerWidth - 280),
+                        y: Math.max(10, rect.top),
+                        type: 'atom',
+                        kind: atom.kind?.toLowerCase() || 'sensor',
+                        name: atom.name,
+                        description: atom.description || 'Drag onto canvas to add',
+                        inputSignals: atom.requiredSignals || [],
+                        outputSignals: atom.emittedSignals || [],
+                        configs: [],
+                        meta: {{
+                            kind: atom.kind || 'Unknown'
+                        }}
+                    }};
                 }}
             }};
         }}

@@ -1,0 +1,21 @@
+name: window-stats
+version: 1.0.0
+description: Emits statistics about a sliding window for monitoring and flow control
+
+taxonomy:
+  kind: analyzer
+  determinism: deterministic
+  persistence: ephemeral
+
+signals:
+  reads:
+    - "*"
+  writes:
+    - stats.count
+    - stats.oldest
+    - stats.newest
+    - stats.span_seconds
+    - stats.rate_per_minute
+
+defaults:
+  window_name: "default"

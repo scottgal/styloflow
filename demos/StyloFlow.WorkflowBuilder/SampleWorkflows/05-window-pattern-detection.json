@@ -1,0 +1,96 @@
+{
+  "id": "sample-window-patterns",
+  "name": "Window Pattern Detection",
+  "description": "Collects entities into sliding window, detects behavioral patterns (burst, periodic)",
+  "nodes": [
+    {
+      "id": "http-1",
+      "manifestName": "http-receiver",
+      "x": 100,
+      "y": 200,
+      "config": {}
+    },
+    {
+      "id": "collector-1",
+      "manifestName": "window-collector",
+      "x": 350,
+      "y": 200,
+      "config": {
+        "window_name": "requests",
+        "max_items": 50,
+        "fingerprint_fields": ["path", "method"]
+      }
+    },
+    {
+      "id": "stats-1",
+      "manifestName": "window-stats",
+      "x": 600,
+      "y": 100,
+      "config": {
+        "window_name": "requests"
+      }
+    },
+    {
+      "id": "pattern-1",
+      "manifestName": "window-pattern-detector",
+      "x": 600,
+      "y": 300,
+      "config": {
+        "window_name": "requests",
+        "min_confidence": 0.7
+      }
+    },
+    {
+      "id": "router-1",
+      "manifestName": "signal-router",
+      "x": 850,
+      "y": 300,
+      "config": {
+        "mode": "match",
+        "match_values": ["burst", "periodic"],
+        "signal_key": "pattern.detected"
+      }
+    },
+    {
+      "id": "log-1",
+      "manifestName": "log-writer",
+      "x": 1100,
+      "y": 200,
+      "config": {
+        "prefix": "PATTERN ALERT"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "http-1",
+      "signalKey": "http.received",
+      "targetNodeId": "collector-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "stats-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "pattern-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "pattern-1",
+      "signalKey": "pattern.detected",
+      "targetNodeId": "router-1"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "router-1",
+      "signalKey": "router.matched",
+      "targetNodeId": "log-1"
+    }
+  ]
+}

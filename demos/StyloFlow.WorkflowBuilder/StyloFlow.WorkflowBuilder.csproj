@@ -25,4 +25,10 @@
     <Content Include="Manifests\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Embed sample workflows -->
+  <ItemGroup>
+    <EmbeddedResource Include="SampleWorkflows\*.json" />
+    <Content Update="SampleWorkflows\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

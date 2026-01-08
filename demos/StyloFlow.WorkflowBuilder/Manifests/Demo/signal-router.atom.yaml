@@ -1,0 +1,38 @@
+name: signal-router
+version: 1.0.0
+description: Routes signals to different outputs based on conditions (if/else/switch style routing)
+
+taxonomy:
+  kind: router
+  determinism: deterministic
+  persistence: ephemeral
+
+signals:
+  reads:
+    - "*"  # Can listen to any input signal
+  writes:
+    - router.*         # Dynamic routing - emits router.{route_name} at runtime
+    - router.decision
+    - router.input_value
+    - router.route_name
+
+defaults:
+  input_signal: "input"
+  mode: "threshold"  # threshold, match, range, contains
+  # Threshold mode config
+  threshold_value: 0.5
+  threshold_above: "route_a"
+  threshold_below: "route_b"
+  # Match mode config
+  match_value: ""
+  match_route: "route_a"
+  no_match_route: "route_default"
+  # Range mode config
+  range_low: 0
+  range_high: 100
+  in_range_route: "route_a"
+  out_range_route: "route_b"
+  # Contains mode config
+  contains_text: ""
+  contains_route: "route_a"
+  not_contains_route: "route_b"

@@ -1,0 +1,64 @@
+# Reducer - Applies aggregation operations to accumulated values
+name: reducer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.ReducerAtom
+description: Reduces accumulated values using sum, avg, max, min, median, or stddev
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: accumulator.entries
+      description: Accumulated entries to reduce
+
+output:
+  produces:
+    - type: reduce.result
+      description: Reduced result
+  signals:
+    - key: reduce.result
+      entityType: number
+      salience: 1.0
+      description: Reduction result
+    - key: reduce.operation
+      entityType: string
+      salience: 0.5
+      description: Operation used
+    - key: reduce.input_count
+      entityType: int
+      salience: 0.6
+      description: Input item count
+
+triggers:
+  requires:
+    - signal: accumulator.entries
+      description: Accumulated entries
+
+emits:
+  onComplete:
+    - key: reduce.result
+      type: number
+      description: Reduced value
+    - key: reduce.operation
+      type: string
+      description: Operation name
+    - key: reduce.input_count
+      type: int
+      description: Input count
+
+defaults:
+  parameters:
+    window_name: accumulator
+    operation: avg
+    value_field: value
+
+tags:
+  - mapreduce
+  - reducer
+  - aggregation

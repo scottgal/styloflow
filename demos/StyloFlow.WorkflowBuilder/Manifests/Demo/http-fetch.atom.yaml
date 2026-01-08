@@ -1,0 +1,68 @@
+# HTTP Fetch - Fetches content from a URL
+name: http-fetch
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.Fetchers.HttpFetchAtom
+description: Fetches content from HTTP/HTTPS URLs with configurable method, headers, and body
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: sensor
+  determinism: non-deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: string
+      description: URL to fetch (can also come from config or signal)
+
+output:
+  produces:
+    - type: http.response
+      description: The HTTP response
+  signals:
+    - key: fetch.response
+      entityType: string
+      salience: 1.0
+      description: Response body as string
+    - key: fetch.status
+      entityType: int
+      salience: 0.8
+      description: HTTP status code
+    - key: fetch.success
+      entityType: bool
+      salience: 0.9
+      description: True if 2xx status
+
+triggers:
+  requires: []  # Can be entry point or triggered
+
+emits:
+  onComplete:
+    - key: fetch.response
+      type: string
+      description: Response body
+    - key: fetch.status
+      type: int
+      description: HTTP status code
+    - key: fetch.success
+      type: bool
+      description: Success indicator
+    - key: fetch.headers
+      type: object
+      description: Response headers
+    - key: fetch.content_type
+      type: string
+      description: Content-Type header
+
+defaults:
+  parameters:
+    method: GET
+    timeout_seconds: 30
+    content_type: application/json
+
+tags:
+  - fetcher
+  - http
+  - web

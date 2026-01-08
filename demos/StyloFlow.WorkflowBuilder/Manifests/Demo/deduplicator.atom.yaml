@@ -1,0 +1,65 @@
+# Deduplicator - Removes near-duplicate items
+name: deduplicator
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.DeduplicatorAtom
+description: Removes near-duplicates using string similarity (Jaro-Winkler, Levenshtein)
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: items
+      description: Items to deduplicate
+
+output:
+  produces:
+    - type: dedup.unique
+      description: Unique items
+  signals:
+    - key: dedup.unique
+      entityType: array
+      salience: 1.0
+      description: Unique item keys
+    - key: dedup.duplicates_removed
+      entityType: int
+      salience: 0.8
+      description: Duplicates removed
+    - key: dedup.clusters
+      entityType: int
+      salience: 0.6
+      description: Unique clusters found
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Items to deduplicate
+
+emits:
+  onComplete:
+    - key: dedup.unique
+      type: array
+      description: Unique items
+    - key: dedup.duplicates_removed
+      type: int
+      description: Removed count
+    - key: dedup.clusters
+      type: int
+      description: Cluster count
+
+defaults:
+  parameters:
+    window_name: items
+    text_field: text
+    threshold: 0.85
+    algorithm: combined
+
+tags:
+  - mapreduce
+  - deduplication
+  - similarity

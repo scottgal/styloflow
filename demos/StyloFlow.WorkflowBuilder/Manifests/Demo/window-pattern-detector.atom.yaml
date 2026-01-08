@@ -1,0 +1,23 @@
+name: window-pattern-detector
+version: 1.0.0
+description: Detects behavioral patterns (burst, periodic, anomaly) in windowed data
+
+taxonomy:
+  kind: analyzer
+  determinism: deterministic
+  persistence: ephemeral
+
+signals:
+  reads:
+    - "*"
+  writes:
+    - pattern.detected
+    - pattern.type
+    - pattern.confidence
+    - pattern.count
+    - pattern.details
+
+defaults:
+  window_name: "default"
+  pattern_type: "all"      # burst, periodic, anomaly, or all
+  min_confidence: 0.5      # Minimum confidence threshold (0-1)

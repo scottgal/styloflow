@@ -1,0 +1,65 @@
+# TopK Selector - Selects top K items by score
+name: topk-selector
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.TopKSelectorAtom
+description: Selects top K items from window based on score field
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: scored.items
+      description: Items with scores
+
+output:
+  produces:
+    - type: topk.selected
+      description: Top K items
+  signals:
+    - key: topk.selected
+      entityType: array
+      salience: 1.0
+      description: Selected item keys
+    - key: topk.count
+      entityType: int
+      salience: 0.7
+      description: Items selected
+    - key: topk.dropped
+      entityType: int
+      salience: 0.5
+      description: Items dropped
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Items with scores
+
+emits:
+  onComplete:
+    - key: topk.selected
+      type: array
+      description: Selected items
+    - key: topk.count
+      type: int
+      description: Selection count
+    - key: topk.dropped
+      type: int
+      description: Dropped count
+
+defaults:
+  parameters:
+    window_name: candidates
+    k: 10
+    score_field: score
+    descending: true
+
+tags:
+  - mapreduce
+  - selection
+  - topk

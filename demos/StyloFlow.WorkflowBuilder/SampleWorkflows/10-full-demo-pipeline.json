@@ -1,0 +1,205 @@
+{
+  "id": "sample-full-demo",
+  "name": "Full Demo Pipeline",
+  "description": "Comprehensive demo using fetchers, windows, mapreduce, routing, and shapers",
+  "nodes": [
+    {
+      "id": "timer-1",
+      "manifestName": "timer-trigger",
+      "x": 50,
+      "y": 300,
+      "config": {
+        "interval_seconds": 10
+      }
+    },
+    {
+      "id": "api-1",
+      "manifestName": "json-api",
+      "x": 200,
+      "y": 300,
+      "config": {
+        "url": "https://test.stylobot.net/api/v1/models",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "collector-1",
+      "manifestName": "window-collector",
+      "x": 350,
+      "y": 300,
+      "config": {
+        "window_name": "raw_data",
+        "max_items": 50
+      }
+    },
+    {
+      "id": "sampler-1",
+      "manifestName": "window-sampler",
+      "x": 500,
+      "y": 200,
+      "config": {
+        "window_name": "raw_data",
+        "sample_size": 20
+      }
+    },
+    {
+      "id": "dedup-1",
+      "manifestName": "deduplicator",
+      "x": 650,
+      "y": 200,
+      "config": {
+        "window_name": "sampled",
+        "threshold": 0.85
+      }
+    },
+    {
+      "id": "bm25-1",
+      "manifestName": "bm25-scorer",
+      "x": 800,
+      "y": 200,
+      "config": {
+        "window_name": "deduplicated"
+      }
+    },
+    {
+      "id": "topk-1",
+      "manifestName": "topk-selector",
+      "x": 950,
+      "y": 200,
+      "config": {
+        "k": 5,
+        "window_name": "scored"
+      }
+    },
+    {
+      "id": "clamp-1",
+      "manifestName": "signal-clamp",
+      "x": 1100,
+      "y": 200,
+      "config": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    {
+      "id": "router-1",
+      "manifestName": "signal-router",
+      "x": 1250,
+      "y": 300,
+      "config": {
+        "mode": "threshold",
+        "threshold": 0.5
+      }
+    },
+    {
+      "id": "log-high",
+      "manifestName": "log-writer",
+      "x": 1400,
+      "y": 200,
+      "config": {
+        "prefix": "HIGH SCORE"
+      }
+    },
+    {
+      "id": "log-low",
+      "manifestName": "log-writer",
+      "x": 1400,
+      "y": 400,
+      "config": {
+        "prefix": "LOW SCORE"
+      }
+    },
+    {
+      "id": "pattern-1",
+      "manifestName": "window-pattern-detector",
+      "x": 500,
+      "y": 400,
+      "config": {
+        "window_name": "raw_data"
+      }
+    },
+    {
+      "id": "stats-1",
+      "manifestName": "window-stats",
+      "x": 650,
+      "y": 400,
+      "config": {
+        "window_name": "raw_data"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "timer-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "api-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "api-1",
+      "signalKey": "api.data",
+      "targetNodeId": "collector-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "sampler-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "sampler-1",
+      "signalKey": "sampler.samples",
+      "targetNodeId": "dedup-1"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "dedup-1",
+      "signalKey": "dedup.unique",
+      "targetNodeId": "bm25-1"
+    },
+    {
+      "id": "e6",
+      "sourceNodeId": "bm25-1",
+      "signalKey": "bm25.scores",
+      "targetNodeId": "topk-1"
+    },
+    {
+      "id": "e7",
+      "sourceNodeId": "topk-1",
+      "signalKey": "topk.selected",
+      "targetNodeId": "clamp-1"
+    },
+    {
+      "id": "e8",
+      "sourceNodeId": "clamp-1",
+      "signalKey": "clamp.output",
+      "targetNodeId": "router-1"
+    },
+    {
+      "id": "e9",
+      "sourceNodeId": "router-1",
+      "signalKey": "router.above",
+      "targetNodeId": "log-high"
+    },
+    {
+      "id": "e10",
+      "sourceNodeId": "router-1",
+      "signalKey": "router.below",
+      "targetNodeId": "log-low"
+    },
+    {
+      "id": "e11",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "pattern-1"
+    },
+    {
+      "id": "e12",
+      "sourceNodeId": "collector-1",
+      "signalKey": "window.added",
+      "targetNodeId": "stats-1"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+# Sum Reducer - Sums values in window
+name: reduce-sum
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.SumReducerAtom
+description: Sums all numeric values in the specified window
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: numbers
+      description: Numeric values to sum
+
+output:
+  produces:
+    - type: sum.result
+      description: Sum result
+  signals:
+    - key: sum.result
+      entityType: number
+      salience: 1.0
+      description: Sum of values
+    - key: sum.count
+      entityType: int
+      salience: 0.7
+      description: Values summed
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Values to sum
+
+emits:
+  onComplete:
+    - key: sum.result
+      type: number
+      description: Sum total
+    - key: sum.count
+      type: int
+      description: Input count
+
+defaults:
+  parameters:
+    window_name: values
+    value_field: value
+
+tags:
+  - mapreduce
+  - reducer
+  - sum

@@ -1,0 +1,65 @@
+# RRF Scorer - Reciprocal Rank Fusion for combining ranked lists
+name: rrf-scorer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.RRFScorerAtom
+description: Combines multiple ranked lists using Reciprocal Rank Fusion (1/(k+rank))
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: ranked.lists
+      description: Multiple ranked lists to fuse
+
+output:
+  produces:
+    - type: rrf.scores
+      description: Fused RRF scores
+  signals:
+    - key: rrf.scores
+      entityType: object
+      salience: 1.0
+      description: Dictionary of item -> RRF score
+    - key: rrf.ranked
+      entityType: array
+      salience: 0.9
+      description: Items ranked by RRF score
+    - key: rrf.top_item
+      entityType: string
+      salience: 0.8
+      description: Highest scored item
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Ranked lists to fuse
+
+emits:
+  onComplete:
+    - key: rrf.scores
+      type: object
+      description: Item -> RRF score mapping
+    - key: rrf.ranked
+      type: array
+      description: Ranked item list
+    - key: rrf.top_item
+      type: string
+      description: Top item
+
+defaults:
+  parameters:
+    window_name: rankings
+    k: 60
+    top_n: 10
+
+tags:
+  - mapreduce
+  - scoring
+  - ranking
+  - fusion

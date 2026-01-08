@@ -1,0 +1,64 @@
+# Accumulator - Groups signals by key for aggregation
+name: accumulator
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.AccumulatorAtom
+description: Groups incoming signals by key, accumulates values for later reduction
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: any
+      description: Any signal values to accumulate
+
+output:
+  produces:
+    - type: accumulator.entries
+      description: Grouped entries by key
+  signals:
+    - key: accumulator.entries
+      entityType: object
+      salience: 1.0
+      description: Dictionary of accumulated entries
+    - key: accumulator.keys
+      entityType: array
+      salience: 0.8
+      description: List of unique keys
+    - key: accumulator.count
+      entityType: int
+      salience: 0.7
+      description: Total entry count
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Accumulates any signals
+
+emits:
+  onComplete:
+    - key: accumulator.entries
+      type: object
+      description: Grouped entries
+    - key: accumulator.keys
+      type: array
+      description: Unique keys
+    - key: accumulator.count
+      type: int
+      description: Total count
+
+defaults:
+  parameters:
+    window_name: accumulator
+    group_by: key
+    value_field: value
+
+tags:
+  - mapreduce
+  - accumulator
+  - aggregation

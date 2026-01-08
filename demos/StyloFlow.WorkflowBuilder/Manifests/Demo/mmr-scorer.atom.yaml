@@ -1,0 +1,66 @@
+# MMR Scorer - Maximal Marginal Relevance for diversity-aware ranking
+name: mmr-scorer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.MMRScorerAtom
+description: Selects items balancing relevance and diversity using MMR algorithm
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: scored.items
+      description: Items with relevance scores and embeddings
+
+output:
+  produces:
+    - type: mmr.selected
+      description: MMR-selected diverse items
+  signals:
+    - key: mmr.selected
+      entityType: array
+      salience: 1.0
+      description: Selected item keys
+    - key: mmr.scores
+      entityType: object
+      salience: 0.9
+      description: MMR scores
+    - key: mmr.diversity
+      entityType: number
+      salience: 0.7
+      description: Average pairwise dissimilarity
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Items with scores
+
+emits:
+  onComplete:
+    - key: mmr.selected
+      type: array
+      description: Selected items
+    - key: mmr.scores
+      type: object
+      description: MMR scores
+    - key: mmr.diversity
+      type: number
+      description: Diversity metric
+
+defaults:
+  parameters:
+    window_name: candidates
+    lambda: 0.5
+    top_n: 10
+    score_field: score
+
+tags:
+  - mapreduce
+  - scoring
+  - diversity
+  - mmr

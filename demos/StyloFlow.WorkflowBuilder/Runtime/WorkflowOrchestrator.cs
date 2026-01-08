@@ -4,10 +4,15 @@ using StyloFlow.WorkflowBuilder.Atoms;
 using StyloFlow.WorkflowBuilder.Atoms.Analyzers;
 using StyloFlow.WorkflowBuilder.Atoms.Config;
 using StyloFlow.WorkflowBuilder.Atoms.Constrainers;
+using StyloFlow.WorkflowBuilder.Atoms.Coordinators;
+using StyloFlow.WorkflowBuilder.Atoms.Fetchers;
 using StyloFlow.WorkflowBuilder.Atoms.Proposers;
 using StyloFlow.WorkflowBuilder.Atoms.Renderers;
 using StyloFlow.WorkflowBuilder.Atoms.Sensors;
+using StyloFlow.WorkflowBuilder.Atoms.MapReduce;
+using StyloFlow.WorkflowBuilder.Atoms.Routers;
 using StyloFlow.WorkflowBuilder.Atoms.Shapers;
+using StyloFlow.WorkflowBuilder.Atoms.Windows;
 using StyloFlow.WorkflowBuilder.Models;
 
 namespace StyloFlow.WorkflowBuilder.Runtime;
@@ -42,6 +47,10 @@ public sealed class WorkflowOrchestrator : IAsyncDisposable
             ["timer-trigger"] = TimerTriggerSensor.ExecuteAsync,
             ["http-receiver"] = HttpReceiverSensor.ExecuteAsync,
 
+            // Fetchers
+            ["http-fetch"] = HttpFetchAtom.ExecuteAsync,
+            ["json-api"] = JsonApiFetcherAtom.ExecuteAsync,
+
             // Analyzers/Extractors
             ["text-analyzer"] = TextAnalyzerExtractor.ExecuteAsync,
 
@@ -70,7 +79,32 @@ public sealed class WorkflowOrchestrator : IAsyncDisposable
             ["config-env"] = ConfigEnvSensor.ExecuteAsync,
             ["config-file"] = ConfigFileSensor.ExecuteAsync,
             ["config-db"] = ConfigDbSensor.ExecuteAsync,
-            ["config-vault"] = ConfigVaultSensor.ExecuteAsync
+            ["config-vault"] = ConfigVaultSensor.ExecuteAsync,
+
+            // Coordinators
+            ["coordinator-keyed"] = KeyedCoordinatorAtom.ExecuteAsync,
+
+            // Routers
+            ["signal-router"] = SignalRouterAtom.ExecuteAsync,
+
+            // Windows (sliding window for entity accumulation and behavioral analysis)
+            ["window-collector"] = WindowCollectorAtom.ExecuteAsync,
+            ["window-sampler"] = WindowSamplerAtom.ExecuteAsync,
+            ["window-pattern-detector"] = WindowPatternDetectorAtom.ExecuteAsync,
+            ["window-stats"] = WindowStatsAtom.ExecuteAsync,
+
+            // MapReduce (accumulation, scoring, reduction)
+            ["accumulator"] = AccumulatorAtom.ExecuteAsync,
+            ["reducer"] = ReducerAtom.ExecuteAsync,
+            ["rrf-scorer"] = RRFScorerAtom.ExecuteAsync,
+            ["mmr-scorer"] = MMRScorerAtom.ExecuteAsync,
+            ["bm25-scorer"] = BM25ScorerAtom.ExecuteAsync,
+            ["reduce-sum"] = SumReducerAtom.ExecuteAsync,
+            ["reduce-avg"] = AvgReducerAtom.ExecuteAsync,
+            ["topk-selector"] = TopKSelectorAtom.ExecuteAsync,
+            ["iterative-reducer"] = IterativeReducerAtom.ExecuteAsync,
+            ["deduplicator"] = DeduplicatorAtom.ExecuteAsync,
+            ["tfidf-scorer"] = TfIdfScorerAtom.ExecuteAsync
         };
     }
 

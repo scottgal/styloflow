@@ -1,0 +1,93 @@
+{
+  "id": "sample-signal-shaping",
+  "name": "Signal Shaping Chain",
+  "description": "Demonstrates signal shapers: clamp, quantize, attenuverter, delay",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "manifestName": "timer-trigger",
+      "x": 100,
+      "y": 200,
+      "config": {
+        "interval_seconds": 2
+      }
+    },
+    {
+      "id": "clamp-1",
+      "manifestName": "signal-clamp",
+      "x": 300,
+      "y": 200,
+      "config": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "id": "quantize-1",
+      "manifestName": "signal-quantizer",
+      "x": 500,
+      "y": 200,
+      "config": {
+        "step": 10
+      }
+    },
+    {
+      "id": "attenuvert-1",
+      "manifestName": "signal-attenuverter",
+      "x": 700,
+      "y": 200,
+      "config": {
+        "gain": 0.5,
+        "offset": 25
+      }
+    },
+    {
+      "id": "delay-1",
+      "manifestName": "signal-delay",
+      "x": 900,
+      "y": 200,
+      "config": {
+        "delay_ms": 500
+      }
+    },
+    {
+      "id": "log-1",
+      "manifestName": "log-writer",
+      "x": 1100,
+      "y": 200,
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "trigger-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "clamp-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "clamp-1",
+      "signalKey": "clamp.output",
+      "targetNodeId": "quantize-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "quantize-1",
+      "signalKey": "quantizer.output",
+      "targetNodeId": "attenuvert-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "attenuvert-1",
+      "signalKey": "attenuverter.output",
+      "targetNodeId": "delay-1"
+    },
+    {
+      "id": "e5",
+      "sourceNodeId": "delay-1",
+      "signalKey": "delay.output",
+      "targetNodeId": "log-1"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "id": "sample-api-fetch",
+  "name": "API Fetch Pipeline",
+  "description": "Fetches JSON from LLMApi, accumulates results, and selects top items",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "manifestName": "timer-trigger",
+      "x": 100,
+      "y": 200,
+      "config": {
+        "interval_seconds": 10
+      }
+    },
+    {
+      "id": "api-1",
+      "manifestName": "json-api",
+      "x": 350,
+      "y": 200,
+      "config": {
+        "url": "https://test.stylobot.net/api/v1/models",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "window-1",
+      "manifestName": "window-collector",
+      "x": 600,
+      "y": 200,
+      "config": {
+        "window_name": "api_results",
+        "max_items": 100
+      }
+    },
+    {
+      "id": "topk-1",
+      "manifestName": "topk-selector",
+      "x": 850,
+      "y": 200,
+      "config": {
+        "window_name": "api_results",
+        "k": 5
+      }
+    },
+    {
+      "id": "log-1",
+      "manifestName": "log-writer",
+      "x": 1100,
+      "y": 200,
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "sourceNodeId": "trigger-1",
+      "signalKey": "timer.triggered",
+      "targetNodeId": "api-1"
+    },
+    {
+      "id": "e2",
+      "sourceNodeId": "api-1",
+      "signalKey": "api.data",
+      "targetNodeId": "window-1"
+    },
+    {
+      "id": "e3",
+      "sourceNodeId": "window-1",
+      "signalKey": "window.added",
+      "targetNodeId": "topk-1"
+    },
+    {
+      "id": "e4",
+      "sourceNodeId": "topk-1",
+      "signalKey": "topk.selected",
+      "targetNodeId": "log-1"
+    }
+  ]
+}

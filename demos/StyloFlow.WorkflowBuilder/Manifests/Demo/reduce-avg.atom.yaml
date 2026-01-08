@@ -1,0 +1,56 @@
+# Average Reducer - Averages values in window
+name: reduce-avg
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.MapReduce.AvgReducerAtom
+description: Calculates average of numeric values in the specified window
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: extractor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: numbers
+      description: Numeric values to average
+
+output:
+  produces:
+    - type: avg.result
+      description: Average result
+  signals:
+    - key: avg.result
+      entityType: number
+      salience: 1.0
+      description: Average of values
+    - key: avg.count
+      entityType: int
+      salience: 0.7
+      description: Values averaged
+
+triggers:
+  requires:
+    - signal: "*"
+      description: Values to average
+
+emits:
+  onComplete:
+    - key: avg.result
+      type: number
+      description: Average
+    - key: avg.count
+      type: int
+      description: Input count
+
+defaults:
+  parameters:
+    window_name: values
+    value_field: value
+
+tags:
+  - mapreduce
+  - reducer
+  - average
