@@ -1,22 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>StyloFlow.Dashboard</RootNamespace>
+    <RootNamespace>StyloFlow.Licensing</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Mostlylucid.StyloFlow.Dashboard.Core</PackageId>
-    <Description>StyloFlow Dashboard Core - Base infrastructure for real-time dashboards with SignalR, widgets, and data visualization. Foundation for StyloFlow Packs.</Description>
-    <PackageTags>dashboard;widgets;signalr;realtime;visualization;echarts;alpine</PackageTags>
+    <PackageId>Mostlylucid.StyloFlow.Licensing</PackageId>
+    <Description>StyloFlow Licensing - System coordinator, license management, work unit metering, and licensing attributes for StyloFlow mesh orchestration.</Description>
+    <PackageTags>licensing;orchestration;signals;metering;coordinator</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mostlylucid.Ephemeral.Complete" Version="2.*" />
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
   </ItemGroup>
 
   <ItemGroup>

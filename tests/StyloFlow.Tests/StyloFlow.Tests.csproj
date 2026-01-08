@@ -10,7 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
@@ -22,7 +25,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\StyloFlow\StyloFlow.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Core\StyloFlow.Core.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Licensing\StyloFlow.Licensing.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Core\StyloFlow.Retrieval.Core.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Documents\StyloFlow.Retrieval.Documents.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Images\StyloFlow.Retrieval.Images.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Audio\StyloFlow.Retrieval.Audio.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Video\StyloFlow.Retrieval.Video.csproj" />
+    <ProjectReference Include="..\..\src\StyloFlow.Retrieval.Data\StyloFlow.Retrieval.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

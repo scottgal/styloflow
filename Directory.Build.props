@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <!-- Version is set via CI/CD, defaults to 0.0.1-local for dev builds -->
+    <Version>0.0.1-local</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+
+    <!-- Common metadata -->
+    <Authors>Scott Galloway</Authors>
+    <Company>Mostlylucid</Company>
+    <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

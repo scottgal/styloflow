@@ -709,6 +709,301 @@ budget:
         └──────────┘  └──────────┘  └──────────┘
 ```
 
+## Licensing Module
+
+StyloFlow includes a comprehensive licensing system for commercial deployments with tiered features, work unit metering, and mesh coordination.
+
+### Quick Start
+
+```csharp
+// Full licensing with System Coordinator
+services.AddStyloFlow(options =>
+{
+    options.LicenseToken = myLicenseJson;
+    options.HeartbeatInterval = TimeSpan.FromSeconds(30);
+});
+
+// Free tier (development/testing)
+services.AddStyloFlowFree();
+
+// Mesh mode for distributed deployments
+services.AddStyloFlowMesh(new[] { "node1:5200", "node2:5200" });
+```
+
+### License Tiers
+
+| Tier | Slots | Work Units/min | Features |
+|------|-------|----------------|----------|
+| `free` | 5 | 100 | Basic functionality |
+| `starter` | 50 | 500 | Document/Image processing |
+| `professional` | 100 | 1000 | Full retrieval + analytics |
+| `enterprise` | Unlimited | Unlimited | Mesh + priority support |
+
+### Licensed Components
+
+Create license-aware components that automatically validate tier requirements:
+
+```csharp
+public class DocumentProcessor : LicensedComponentBase
+{
+    public DocumentProcessor(
+        ILicenseManager licenseManager,
+        IWorkUnitMeter workUnitMeter,
+        SignalSink signalSink)
+        : base(licenseManager, workUnitMeter, signalSink, new LicenseRequirements
+        {
+            MinimumTier = "starter",
+            WorkUnits = 2.0,
+            WorkUnitsPerKb = 0.5,
+            RequiredFeatures = new[] { "documents.*" },
+            AllowFreeTierDegradation = true
+        })
+    { }
+
+    public override string ComponentId => "styloflow.documents.processor";
+
+    public async Task<Result> ProcessAsync(byte[] document)
+    {
+        // Check if we can perform the operation
+        if (!CanPerformOperation(document.Length))
+            return Result.Throttled();
+
+        // Do the work...
+        var result = await DoProcessingAsync(document);
+
+        // Record work units
+        RecordWorkUnits(document.Length);
+
+        // Emit completion signal
+        EmitSignal("processed", document.Length.ToString());
+
+        return result;
+    }
+}
+```
+
+### Work Unit Metering
+
+Track and throttle resource consumption with sliding window metering:
+
+```csharp
+var meter = provider.GetRequiredService<IWorkUnitMeter>();
+
+// Record work
+meter.Record(10.0, "documents");
+
+// Check capacity
+if (meter.CanConsume(50.0))
+{
+    // Proceed with operation
+}
+
+// Get throttle factor (1.0 = full speed, 0.0 = throttled)
+var factor = meter.ThrottleFactor;
+
+// Subscribe to threshold events
+meter.ThresholdCrossed += (_, evt) =>
+{
+    Console.WriteLine($"Threshold {evt.ThresholdPercent}% crossed");
+};
+```
+
+### System Signals
+
+The SystemCoordinator emits these signals for orchestration:
+
+| Signal | Description |
+|--------|-------------|
+| `styloflow.system.ready` | System initialized and ready |
+| `styloflow.system.heartbeat` | Periodic health check |
+| `styloflow.system.license.valid` | License validated successfully |
+| `styloflow.system.license.expires_soon` | License expiring within grace period |
+| `styloflow.system.license.tier.{tier}` | Current license tier |
+| `styloflow.system.slots.available` | Available molecule slots |
+| `styloflow.system.workunit.rate` | Current work unit consumption rate |
+| `styloflow.system.workunit.throttling` | Throttling is active |
+
+### YAML License Configuration
+
+Configure licensing in component manifests:
+
+```yaml
+license:
+  tier: starter
+  features:
+    - documents.*
+    - images.*
+  work_units:
+    base: 2.0
+    per_kb: 0.5
+  requires_system: true
+  allow_degradation: true
+
+signals:
+  defer_on:
+    - styloflow.system.ready
+  resume_on:
+    - styloflow.system.ready
+  free_tier:
+    - component.degraded
+  licensed:
+    - component.ready
+```
+
+For detailed licensing documentation, see [src/StyloFlow.Licensing/README.md](src/StyloFlow.Licensing/README.md).
+
+## Package Signing & Supply Chain Security
+
+StyloFlow includes `sfsign`, a package signing tool that provides Ed25519-based cryptographic signatures for supply chain integrity.
+
+### Installation
+
+```bash
+dotnet tool install -g Mostlylucid.StyloFlow.Sign
+```
+
+### Quick Start
+
+```bash
+# Generate a signing key
+sfsign key generate --id "myvendor" --name "My Vendor Key" --keyring keyring.json
+
+# Sign a package
+sfsign sign --package mypackage.sfpkg --key "myvendor" --keyring keyring.json
+
+# Verify a signed package
+sfsign verify --package mypackage.sfpkg
+```
+
+### Key Management
+
+```bash
+# Generate a new Ed25519 key pair
+sfsign key generate --id "vendor.example" --name "Example Vendor" --keyring keyring.json
+
+# List keys in a keyring
+sfsign key list --keyring keyring.json
+
+# Export public key for distribution (safe to share)
+sfsign key export-public --id "vendor.example" --keyring keyring.json --output public.json
+```
+
+### Signing Packages
+
+```bash
+# Sign with author type (package creator)
+sfsign sign --package mypackage.sfpkg --key "myvendor" --type author --keyring keyring.json
+
+# Add vendor signature (distribution)
+sfsign sign --package mypackage.sfpkg --key "distributor" --type vendor --keyring keyring.json
+
+# Add audit signature (third-party verification)
+sfsign sign --package mypackage.sfpkg --key "auditor" --type audit --keyring keyring.json
+```
+
+### Verification
+
+```bash
+# Basic verification (checks hash and signatures)
+sfsign verify --package mypackage.sfpkg
+
+# Verify with trust configuration
+sfsign verify --package mypackage.sfpkg --trust trust.json
+
+# Require specific signers
+sfsign verify --package mypackage.sfpkg --require "myvendor" --require "auditor"
+```
+
+### Trust Configuration
+
+```bash
+# Add a key to trusted roots
+sfsign trust add --key "myvendor" --keyring keyring.json --config trust.json
+
+# List trusted keys and cross-signings
+sfsign trust list --config trust.json
+```
+
+### Cross-Signing for Trust Chains
+
+Cross-signing allows a trusted vendor to vouch for another vendor's key, creating trust chains without centralized authorities.
+
+```bash
+# Create cross-signing certificate (myvendor vouches for partner)
+sfsign cross-sign \
+  --issuer "myvendor" \
+  --subject "partner.vendor" \
+  --keyring keyring.json \
+  --output trust.json
+
+# Cross-sign with expiration
+sfsign cross-sign \
+  --issuer "myvendor" \
+  --subject "partner.vendor" \
+  --valid-to "2027-01-01" \
+  --keyring keyring.json
+```
+
+### Signature Types
+
+| Type | Purpose | Use Case |
+|------|---------|----------|
+| `author` | Package creator | Original developer signs their work |
+| `vendor` | Distribution | Distributor vouches for package authenticity |
+| `audit` | Third-party | Security auditor confirms code review |
+
+### Manifest Format
+
+Signatures are stored in `.sig.json` files alongside packages:
+
+```json
+{
+  "version": "1.0",
+  "packageId": "mypackage",
+  "packageHash": "GSP4PaEWyjVhQ+071f+l...",
+  "packageSize": 12345,
+  "timestamp": "2026-01-08T18:30:00Z",
+  "signatures": [
+    {
+      "signerId": "myvendor",
+      "signerName": "My Vendor",
+      "publicKey": "wE47MgQxtBez5t0z+Jgzs...",
+      "signature": "jkvkKxSYGT9gNLdLIxUp...",
+      "signedAt": "2026-01-08T18:30:00Z",
+      "signatureType": "author"
+    }
+  ]
+}
+```
+
+### Security Model
+
+- **Ed25519**: Fast, secure, deterministic signatures with 128-bit security
+- **SHA-256**: Package integrity verification
+- **Multi-signature**: Support for multiple independent signatures
+- **Cross-signing**: Decentralized trust without certificate authorities
+- **No key escrow**: Private keys never leave your control
+
+## Package Structure
+
+| Package | Description |
+|---------|-------------|
+| `Mostlylucid.StyloFlow.Core` | Core orchestration, manifests, configuration |
+| `Mostlylucid.StyloFlow.Licensing` | Licensing, work unit metering, mesh coordination |
+| `Mostlylucid.StyloFlow.Sign` | Package signing CLI tool (`sfsign`) |
+| `Mostlylucid.StyloFlow.Retrieval.Core` | Base retrieval interfaces and scoring |
+| `Mostlylucid.StyloFlow.Retrieval.Documents` | Document chunking, MMR reranking |
+| `Mostlylucid.StyloFlow.Retrieval.Images` | Perceptual hashing, image similarity |
+| `Mostlylucid.StyloFlow.Retrieval.Audio` | Audio fingerprinting |
+| `Mostlylucid.StyloFlow.Retrieval.Video` | Video fingerprinting |
+| `Mostlylucid.StyloFlow.Retrieval.Data` | PII detection, anomaly scoring |
+| `Mostlylucid.StyloFlow.Dashboard.Core` | Monitoring dashboard components |
+| `Mostlylucid.StyloFlow.Complete` | Metapackage with all components |
+
 ## License
 
 This is free and unencumbered software released into the public domain - see [UNLICENSE](UNLICENSE) for details.
+
+---
+
+*Documentation is actively being expanded. Check individual project README files for detailed API documentation.*

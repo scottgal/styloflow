@@ -8,16 +8,8 @@
     <RootNamespace>StyloFlow.Retrieval.Images</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Mostlylucid.StyloFlow.Retrieval.Images</PackageId>
-    <Version>2.0.0</Version>
-    <Authors>Scott Galloway</Authors>
-    <Company>Mostlylucid</Company>
-    <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
     <Description>StyloFlow Retrieval Images - Image fingerprinting, perceptual hashing (PDQ, block mean), deduplication, and color analysis for image similarity and retrieval.</Description>
     <PackageTags>retrieval;images;perceptual-hash;deduplication;color-analysis;fingerprint</PackageTags>
-    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>

@@ -8,16 +8,8 @@
     <RootNamespace>StyloFlow.Retrieval.Video</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Mostlylucid.StyloFlow.Retrieval.Video</PackageId>
-    <Version>2.0.0</Version>
-    <Authors>Scott Galloway</Authors>
-    <Company>Mostlylucid</Company>
-    <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
     <Description>StyloFlow Retrieval Video - Video fingerprinting, temporal pattern analysis, and multi-frame composition for video content retrieval.</Description>
     <PackageTags>retrieval;video;fingerprint;temporal;analysis</PackageTags>
-    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>

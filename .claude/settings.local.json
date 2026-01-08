@@ -10,7 +10,15 @@
       "Bash(unzip:*)",
       "Bash(cd:*)",
       "Bash(dir:*)",
-      "Bash(dotnet sln:*)"
+      "Bash(dotnet sln:*)",
+      "Bash(grep:*)",
+      "Bash(copy \"D:\\\\Source\\\\styloflow\\\\src\\\\StyloFlow.Core\\\\icon.png\" \"D:\\\\Source\\\\styloflow\\\\src\\\\StyloFlow.Licensing\\\\icon.png\")",
+      "Bash(cmd /c copy:*)",
+      "Bash(cmd /c \"cd /d D:\\\\Source\\\\styloflow && dotnet sln add src\\\\StyloFlow.Licensing\\\\StyloFlow.Licensing.csproj --solution-folder src\")",
+      "Bash(cmd /c \"cd /d D:\\\\Source\\\\styloflow && dotnet build src\\\\StyloFlow.Licensing\\\\StyloFlow.Licensing.csproj --verbosity minimal\")",
+      "Bash(powershell -Command:*)",
+      "WebSearch",
+      "Bash(dotnet run:*)"
     ]
   }
 }

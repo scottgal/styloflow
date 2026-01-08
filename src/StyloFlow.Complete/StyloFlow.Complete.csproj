@@ -5,33 +5,50 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>StyloFlow</RootNamespace>
+
+    <!-- Metapackage configuration -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeContentInPack>false</IncludeContentInPack>
+    <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- Package metadata -->
     <PackageId>Mostlylucid.StyloFlow.Complete</PackageId>
-    <Version>2.0.0</Version>
-    <Authors>Scott Galloway</Authors>
-    <Company>Mostlylucid</Company>
-    <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
-    <Description>StyloFlow Complete - All StyloFlow functionality in a single package. Includes Core, Retrieval (Documents, Images, Audio, Video, Data), Dashboard, and all analysis capabilities.</Description>
-    <PackageTags>orchestration;workflow;retrieval;analysis;complete;bundle</PackageTags>
-    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    <Description>StyloFlow Complete - All StyloFlow functionality in a single metapackage. Includes Core, Retrieval (Documents, Images, Audio, Video, Data), Dashboard, and Licensing.</Description>
+    <PackageTags>orchestration;workflow;retrieval;analysis;complete;bundle;metapackage</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <PackageType>Dependency</PackageType>
   </PropertyGroup>
 
-  <!-- Reference all sub-packages -->
-  <ItemGroup>
-    <ProjectReference Include="..\StyloFlow.Core\StyloFlow.Core.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Core\StyloFlow.Retrieval.Core.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Documents\StyloFlow.Retrieval.Documents.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Images\StyloFlow.Retrieval.Images.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Audio\StyloFlow.Retrieval.Audio.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Video\StyloFlow.Retrieval.Video.csproj" />
-    <ProjectReference Include="..\StyloFlow.Retrieval.Data\StyloFlow.Retrieval.Data.csproj" />
-    <ProjectReference Include="..\StyloFlow.Dashboard.Core\StyloFlow.Dashboard.Core.csproj" />
+  <!--
+    Metapackage references - consumers get all these packages transitively.
+    Version uses * to get the latest version from the same feed.
+    For local development, use ProjectReferences with Pack="true".
+  -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <PackageReference Include="Mostlylucid.StyloFlow.Core" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Core" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Documents" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Images" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Audio" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Video" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Retrieval.Data" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Dashboard.Core" Version="*" />
+    <PackageReference Include="Mostlylucid.StyloFlow.Licensing" Version="*" />
+  </ItemGroup>
+
+  <!-- For Debug builds, use ProjectReferences for easier development -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <ProjectReference Include="..\StyloFlow.Core\StyloFlow.Core.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Core\StyloFlow.Retrieval.Core.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Documents\StyloFlow.Retrieval.Documents.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Images\StyloFlow.Retrieval.Images.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Audio\StyloFlow.Retrieval.Audio.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Video\StyloFlow.Retrieval.Video.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Data\StyloFlow.Retrieval.Data.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Dashboard.Core\StyloFlow.Dashboard.Core.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\StyloFlow.Licensing\StyloFlow.Licensing.csproj" PrivateAssets="none" />
   </ItemGroup>
 
   <ItemGroup>
