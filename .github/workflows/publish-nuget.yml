@@ -48,6 +48,7 @@ jobs:
       - name: Restore
         run: dotnet restore StyloFlow.sln
 
+      # StyloFlow.Complete is excluded from Release builds in the solution
       - name: Build
         run: dotnet build StyloFlow.sln --configuration Release --no-restore
 
@@ -59,7 +60,7 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
           mkdir -p ./nupkg
 
-          # Pack all StyloFlow packages
+          # Pack all StyloFlow packages (excluding Complete metapackage)
           dotnet pack src/StyloFlow.Core/StyloFlow.Core.csproj \
             --configuration Release --no-build \
             -p:PackageVersion=$VERSION \
@@ -100,10 +101,12 @@ jobs:
             -p:PackageVersion=$VERSION \
             --output ./nupkg
 
-          dotnet pack src/StyloFlow.Complete/StyloFlow.Complete.csproj \
+          dotnet pack src/StyloFlow.Licensing/StyloFlow.Licensing.csproj \
             --configuration Release --no-build \
             -p:PackageVersion=$VERSION \
             --output ./nupkg
+
+          # Note: StyloFlow.Complete metapackage is excluded - publish separately after other packages are live
 
       - name: List packages
         run: ls -la ./nupkg/

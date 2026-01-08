@@ -25,20 +25,12 @@ jobs:
             9.0.x
             10.0.x
 
-      # Restore and build projects individually (excluding StyloFlow.Complete metapackage)
+      - name: Restore
+        run: dotnet restore StyloFlow.sln
+
+      # StyloFlow.Complete is excluded from Release builds in the solution
       - name: Build
-        run: |
-          dotnet build src/StyloFlow.Core/StyloFlow.Core.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Core/StyloFlow.Retrieval.Core.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Documents/StyloFlow.Retrieval.Documents.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Images/StyloFlow.Retrieval.Images.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Audio/StyloFlow.Retrieval.Audio.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Video/StyloFlow.Retrieval.Video.csproj --configuration Release
-          dotnet build src/StyloFlow.Retrieval.Data/StyloFlow.Retrieval.Data.csproj --configuration Release
-          dotnet build src/StyloFlow.Dashboard.Core/StyloFlow.Dashboard.Core.csproj --configuration Release
-          dotnet build src/StyloFlow.Licensing/StyloFlow.Licensing.csproj --configuration Release
-          dotnet build tools/StyloFlow.Sign/StyloFlow.Sign.csproj --configuration Release
-          dotnet build tests/StyloFlow.Tests/StyloFlow.Tests.csproj --configuration Release
+        run: dotnet build StyloFlow.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test tests/StyloFlow.Tests/StyloFlow.Tests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test StyloFlow.sln --configuration Release --no-build --verbosity normal
