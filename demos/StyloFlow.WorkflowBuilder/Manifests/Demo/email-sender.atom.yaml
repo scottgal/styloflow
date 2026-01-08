@@ -1,0 +1,68 @@
+# Email Sender - Sends email notifications
+name: email-sender
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.EmailSenderAtom
+description: Sends email notifications when triggered
+enabled: true
+priority: 10
+
+taxonomy:
+  kind: emitter
+  determinism: deterministic
+  persistence: durable
+
+input:
+  accepts:
+    - type: notification.request
+      description: Notification request with subject/body
+  requiredSignals:
+    - filter.passed
+  optionalSignals:
+    - text.content
+    - sentiment.label
+
+output:
+  produces:
+    - type: email.sent
+      description: Confirmation of sent email
+  signals:
+    - key: email.sent
+      entityType: bool
+      salience: 0.9
+      description: True if email was sent successfully
+    - key: email.message_id
+      entityType: string
+      salience: 0.5
+      description: Email message ID from provider
+
+triggers:
+  requires:
+    - signal: filter.passed
+      condition: eq
+      value: true
+  skipWhen:
+    - filter.exceeded == false
+
+emits:
+  onComplete:
+    - key: email.sent
+      type: bool
+      description: Email sent successfully
+    - key: email.message_id
+      type: string
+      description: Provider message ID
+  onFailure:
+    - email.failed
+
+defaults:
+  parameters:
+    to: admin@example.com
+    subject_template: "Alert: {{sentiment.label}}"
+    body_template: "Content: {{text.content}}\nSentiment: {{sentiment.label}} ({{sentiment.score}})"
+
+tags:
+  - notification
+  - email
+  - alert
+  - output

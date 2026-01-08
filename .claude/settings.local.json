@@ -22,7 +22,18 @@
       "Bash(dotnet pack:*)",
       "Bash(CI=true dotnet build:*)",
       "Bash(ls:*)",
-      "Bash(CI=true dotnet test:*)"
+      "Bash(CI=true dotnet test:*)",
+      "Bash(timeout 10 dotnet run:*)",
+      "Bash(Start-Process -FilePath \"dotnet\" -ArgumentList \"run\",\"--project\",\"D:/Source/styloflow/demos/StyloFlow.WorkflowBuilder/StyloFlow.WorkflowBuilder.csproj\" -WindowStyle Hidden)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Invoke-RestMethod -Uri \"http://localhost:5000/workflow-builder/api/manifests\")",
+      "Bash(ConvertTo-Json -Depth 5)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Source\\\\mostlylucid.atoms\\\\mostlylucid.ephemeral\\\\src\" -Recurse -Filter \"*.cs\")",
+      "Bash(Where-Object { $_FullName -notmatch \"\\\\obj\\\\\" })",
+      "Bash(Select-Object -First 30 -ExpandProperty FullName)",
+      "Bash(dotnet list:*)"
     ]
   }
 }

@@ -46,6 +46,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StyloFlow.Sign", "tools\StyloFlow.Sign\StyloFlow.Sign.csproj", "{38707BBE-E684-48C7-B158-C4DC549FE7FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StyloFlow.WorkflowBuilder", "demos\StyloFlow.WorkflowBuilder\StyloFlow.WorkflowBuilder.csproj", "{CE427E11-9FD3-4672-B5D2-AD3C32801136}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{E2EFCB61-5E8F-4C97-82E0-6B27B6FC0BDB}"
+	ProjectSection(SolutionItems) = preProject
+		docs\mesh-licensing-architecture.md = docs\mesh-licensing-architecture.md
+		README.md = README.md
+		docs\sfpkg.md = docs\sfpkg.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -209,6 +218,18 @@ Global
 		{38707BBE-E684-48C7-B158-C4DC549FE7FE}.Release|x64.Build.0 = Release|Any CPU
 		{38707BBE-E684-48C7-B158-C4DC549FE7FE}.Release|x86.ActiveCfg = Release|Any CPU
 		{38707BBE-E684-48C7-B158-C4DC549FE7FE}.Release|x86.Build.0 = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|x64.Build.0 = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Debug|x86.Build.0 = Debug|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|x64.ActiveCfg = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|x64.Build.0 = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|x86.ActiveCfg = Release|Any CPU
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -227,6 +248,7 @@ Global
 		{D385F568-7E7B-471C-8DED-018D7201A7E0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{D1FC5CE5-4B3B-4312-911D-497FC75B13D7} = {FA8A28C8-4B59-8028-2ACF-626D05B08DB7}
 		{38707BBE-E684-48C7-B158-C4DC549FE7FE} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
+		{CE427E11-9FD3-4672-B5D2-AD3C32801136} = {FA8A28C8-4B59-8028-2ACF-626D05B08DB7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8F6F9A5C-1234-4567-89AB-CDEF01234567}

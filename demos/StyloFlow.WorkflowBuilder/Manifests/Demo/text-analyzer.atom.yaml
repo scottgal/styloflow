@@ -1,0 +1,74 @@
+# Text Analyzer - Processes text and extracts metrics
+name: text-analyzer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.TextAnalyzerAtom
+description: Analyzes text content and extracts word count, sentiment hints, and structure
+enabled: true
+priority: 50
+
+taxonomy:
+  kind: analyzer
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: text.raw
+      description: Raw text content to analyze
+  requiredSignals:
+    - http.body
+  optionalSignals:
+    - timer.triggered
+
+output:
+  produces:
+    - type: text.analyzed
+      description: Analyzed text with metrics
+  signals:
+    - key: text.analyzed
+      entityType: object
+      salience: 0.9
+      description: Complete analysis result
+    - key: text.word_count
+      entityType: number
+      salience: 0.7
+      description: Number of words in the text
+    - key: text.char_count
+      entityType: number
+      salience: 0.5
+      description: Number of characters
+    - key: text.content
+      entityType: string
+      salience: 0.8
+      description: The processed text content
+
+triggers:
+  requires:
+    - signal: http.body
+    - signal: timer.triggered
+
+emits:
+  onComplete:
+    - key: text.analyzed
+      type: object
+      description: Full analysis object
+    - key: text.word_count
+      type: number
+      description: Word count
+    - key: text.char_count
+      type: number
+      description: Character count
+    - key: text.content
+      type: string
+      description: Processed text
+
+defaults:
+  parameters:
+    min_word_length: 2
+    strip_punctuation: true
+
+tags:
+  - text
+  - analysis
+  - nlp

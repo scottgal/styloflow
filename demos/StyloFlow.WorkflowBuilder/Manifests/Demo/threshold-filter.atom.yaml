@@ -1,0 +1,71 @@
+# Threshold Filter - Gates signals based on threshold conditions
+name: threshold-filter
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.ThresholdFilterAtom
+description: Filters signals based on configurable threshold conditions
+enabled: true
+priority: 30
+
+taxonomy:
+  kind: proposer
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: numeric.value
+      description: Any numeric signal value
+  requiredSignals:
+    - sentiment.score
+
+output:
+  produces:
+    - type: filter.result
+      description: Filter pass/fail result
+  signals:
+    - key: filter.passed
+      entityType: bool
+      salience: 0.9
+      description: True if value meets threshold
+    - key: filter.exceeded
+      entityType: bool
+      salience: 0.9
+      description: True if value exceeds threshold
+    - key: filter.value
+      entityType: number
+      salience: 0.6
+      description: The evaluated value
+
+triggers:
+  requires:
+    - signal: sentiment.score
+
+emits:
+  onComplete:
+    - key: filter.passed
+      type: bool
+      description: True if value passed the filter
+    - key: filter.exceeded
+      type: bool
+      description: True if value exceeded threshold
+    - key: filter.value
+      type: number
+      description: The value that was evaluated
+  conditional:
+    - key: filter.action_required
+      type: bool
+      when: filter.exceeded == true
+      description: Indicates follow-up action needed
+
+defaults:
+  parameters:
+    threshold: 0.5
+    operator: gte
+    signal_key: sentiment.score
+
+tags:
+  - filter
+  - threshold
+  - gate
+  - routing

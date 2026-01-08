@@ -1,0 +1,63 @@
+# Log Writer - Writes events to log storage
+name: log-writer
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.LogWriterAtom
+description: Logs workflow events and signal values for debugging and auditing
+enabled: true
+priority: 5
+
+taxonomy:
+  kind: emitter
+  determinism: deterministic
+  persistence: durable
+
+input:
+  accepts:
+    - type: any
+      description: Accepts any signal type
+  optionalSignals:
+    - "*"  # Listens to all signals
+
+output:
+  produces:
+    - type: log.entry
+      description: The written log entry
+  signals:
+    - key: log.written
+      entityType: bool
+      salience: 0.5
+      description: True if log entry was written
+
+triggers:
+  requires: []  # Can be triggered by any signal
+  when:
+    - "any_signal"
+
+listens:
+  optional:
+    - "*"
+
+emits:
+  onComplete:
+    - key: log.written
+      type: bool
+      description: Log entry written successfully
+    - key: log.entry_id
+      type: string
+      description: Unique log entry identifier
+  onFailure:
+    - log.failed
+
+defaults:
+  parameters:
+    log_level: info
+    include_timestamp: true
+    include_signals: true
+    format: json
+
+tags:
+  - logging
+  - audit
+  - debug
+  - output

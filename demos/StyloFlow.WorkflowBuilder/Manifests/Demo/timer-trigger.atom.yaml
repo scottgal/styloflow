@@ -1,0 +1,54 @@
+# Timer Trigger - Entry point atom that fires on a schedule
+name: timer-trigger
+
+# Runtime binding - ties manifest to implementation
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.TimerTriggerAtom
+  # Future: package: Mostlylucid.StyloFlow.Sensors
+description: Fires at scheduled intervals to trigger workflow execution
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: sensor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is an entry point
+
+output:
+  produces:
+    - type: event.trigger
+      description: Timer tick event
+  signals:
+    - key: timer.triggered
+      entityType: bool
+      salience: 1.0
+      description: Emitted when timer fires
+    - key: timer.timestamp
+      entityType: datetime
+      salience: 0.8
+      description: The time when the trigger fired
+
+triggers:
+  requires: []  # No triggers - this is an entry point
+
+emits:
+  onComplete:
+    - key: timer.triggered
+      type: bool
+      description: Always true when timer fires
+    - key: timer.timestamp
+      type: datetime
+      description: UTC timestamp of the trigger
+
+defaults:
+  parameters:
+    interval_seconds: 60
+    enabled: true
+
+tags:
+  - entry-point
+  - scheduler
+  - timer

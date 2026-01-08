@@ -1,0 +1,68 @@
+# HTTP Receiver - Entry point atom that receives HTTP webhooks
+name: http-receiver
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.HttpReceiverAtom
+description: Receives HTTP webhook requests and extracts body/headers
+enabled: true
+priority: 100
+
+taxonomy:
+  kind: sensor
+  determinism: deterministic
+  persistence: ephemeral
+
+input:
+  accepts: []  # No input - this is an entry point
+
+output:
+  produces:
+    - type: http.request
+      description: The incoming HTTP request
+  signals:
+    - key: http.received
+      entityType: bool
+      salience: 1.0
+      description: Emitted when HTTP request is received
+    - key: http.body
+      entityType: string
+      salience: 0.9
+      description: The request body as string
+    - key: http.method
+      entityType: string
+      salience: 0.5
+      description: HTTP method (GET, POST, etc.)
+    - key: http.path
+      entityType: string
+      salience: 0.5
+      description: Request path
+
+triggers:
+  requires: []  # No triggers - this is an entry point
+
+emits:
+  onComplete:
+    - key: http.received
+      type: bool
+      description: Always true when request is received
+    - key: http.body
+      type: string
+      description: Request body content
+    - key: http.method
+      type: string
+      description: HTTP method
+    - key: http.path
+      type: string
+      description: Request URL path
+
+defaults:
+  parameters:
+    endpoint: /webhook
+    methods:
+      - POST
+      - PUT
+
+tags:
+  - entry-point
+  - webhook
+  - http

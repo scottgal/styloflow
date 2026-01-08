@@ -1,0 +1,76 @@
+# Sentiment Detector - Analyzes sentiment of text
+name: sentiment-detector
+
+runtime:
+  type: StyloFlow.WorkflowBuilder.Atoms.SentimentDetectorAtom
+description: Detects sentiment (positive/negative/neutral) from analyzed text
+enabled: true
+priority: 40
+
+taxonomy:
+  kind: analyzer
+  determinism: probabilistic
+  persistence: ephemeral
+
+input:
+  accepts:
+    - type: text.analyzed
+      description: Pre-analyzed text content
+  requiredSignals:
+    - text.analyzed
+
+output:
+  produces:
+    - type: sentiment.result
+      description: Sentiment analysis result
+  signals:
+    - key: sentiment.score
+      entityType: number
+      salience: 0.9
+      description: Sentiment score from -1.0 (negative) to 1.0 (positive)
+    - key: sentiment.label
+      entityType: string
+      salience: 0.8
+      description: Sentiment label (positive, negative, neutral)
+    - key: sentiment.confidence
+      entityType: number
+      salience: 0.7
+      description: Confidence level of the sentiment prediction
+
+triggers:
+  requires:
+    - signal: text.analyzed
+    - signal: text.content
+
+emits:
+  onComplete:
+    - key: sentiment.score
+      type: number
+      description: Sentiment score (-1 to 1)
+      confidenceRange: [-1.0, 1.0]
+    - key: sentiment.label
+      type: string
+      description: Human readable label
+    - key: sentiment.confidence
+      type: number
+      description: Prediction confidence (0 to 1)
+  conditional:
+    - key: sentiment.is_positive
+      type: bool
+      when: sentiment.score > 0.3
+      description: True if sentiment is positive
+    - key: sentiment.is_negative
+      type: bool
+      when: sentiment.score < -0.3
+      description: True if sentiment is negative
+
+defaults:
+  parameters:
+    model: basic
+    language: en
+
+tags:
+  - sentiment
+  - analysis
+  - nlp
+  - ml
