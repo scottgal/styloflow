@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://styloflow.dev/schemas/component-manifest.schema.json",
+  "title": "StyloFlow Component Manifest",
+  "description": "Schema for StyloFlow component manifest files (*.yaml)",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique identifier for the component",
+      "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+    },
+    "priority": {
+      "type": "integer",
+      "description": "Execution priority (lower runs first)",
+      "minimum": 0,
+      "maximum": 1000,
+      "default": 100
+    },
+    "enabled": {
+      "type": "boolean",
+      "description": "Whether this component is enabled",
+      "default": true
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the component"
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "taxonomy": {
+      "$ref": "#/$defs/taxonomy"
+    },
+    "input": {
+      "$ref": "#/$defs/inputContract"
+    },
+    "output": {
+      "$ref": "#/$defs/outputContract"
+    },
+    "triggers": {
+      "$ref": "#/$defs/triggers"
+    },
+    "emits": {
+      "$ref": "#/$defs/emits"
+    },
+    "listens": {
+      "$ref": "#/$defs/listens"
+    },
+    "lane": {
+      "$ref": "#/$defs/lane"
+    },
+    "budget": {
+      "$ref": "#/$defs/budget"
+    },
+    "config": {
+      "$ref": "#/$defs/config"
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default configuration values",
+      "additionalProperties": true
+    },
+    "tags": {
+      "type": "array",
+      "description": "Tags for categorization and filtering",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "description": "Defines the component's namespace and scope",
+      "properties": {
+        "sink": {
+          "type": "string",
+          "description": "Signal sink namespace (e.g., 'botdetection', 'docsummarizer')"
+        },
+        "coordinator": {
+          "type": "string",
+          "description": "Coordinator name within the sink"
+        },
+        "atom": {
+          "type": "string",
+          "description": "Atom identifier within the coordinator"
+        }
+      }
+    },
+    "taxonomy": {
+      "type": "object",
+      "description": "Classification of the component's behavior",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "Component kind",
+          "enum": ["sensor", "analyzer", "proposer", "gatekeeper", "aggregator", "emitter"]
+        },
+        "determinism": {
+          "type": "string",
+          "description": "Whether outputs are deterministic or probabilistic",
+          "enum": ["deterministic", "probabilistic"],
+          "default": "deterministic"
+        },
+        "persistence": {
+          "type": "string",
+          "description": "How the component persists data",
+          "enum": ["ephemeral", "direct_read", "direct_write", "cached"],
+          "default": "ephemeral"
+        }
+      }
+    },
+    "inputContract": {
+      "type": "object",
+      "description": "Defines what the component consumes",
+      "properties": {
+        "accepts": {
+          "type": "array",
+          "description": "Entity types this component accepts as input",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Entity type identifier (e.g., 'botdetection.request')"
+              },
+              "required": {
+                "type": "boolean",
+                "description": "Whether this input is required",
+                "default": true
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of this input"
+              },
+              "signal_pattern": {
+                "type": "string",
+                "description": "Signal pattern to match for this input (supports glob wildcards)"
+              }
+            },
+            "required": ["type"]
+          }
+        },
+        "required_signals": {
+          "type": "array",
+          "description": "Signal keys that must be present",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optional_signals": {
+          "type": "array",
+          "description": "Signal keys that may be present",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "outputContract": {
+      "type": "object",
+      "description": "Defines what the component produces",
+      "properties": {
+        "produces": {
+          "type": "array",
+          "description": "Entity types this component produces",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Entity type identifier"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of this output"
+              }
+            },
+            "required": ["type"]
+          }
+        },
+        "signals": {
+          "type": "array",
+          "description": "Signals emitted by this component",
+          "items": {
+            "$ref": "#/$defs/signalDefinition"
+          }
+        }
+      }
+    },
+    "signalDefinition": {
+      "type": "object",
+      "description": "Definition of a signal emitted by a component",
+      "required": ["key"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Signal key (dot-separated namespace)"
+        },
+        "entity_type": {
+          "type": "string",
+          "description": "Data type of the signal value",
+          "enum": ["string", "number", "boolean", "object", "string[]", "number[]", "double", "int", "bool"]
+        },
+        "salience": {
+          "type": "number",
+          "description": "Importance of this signal (0.0-1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.5
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the signal"
+        },
+        "confidence_range": {
+          "type": "array",
+          "description": "Valid range for confidence values [min, max]",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "triggers": {
+      "type": "object",
+      "description": "Conditions that control when the component runs",
+      "properties": {
+        "requires": {
+          "type": "array",
+          "description": "Signals or conditions required for execution",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Signal key that must be present"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "signal": {
+                    "type": "string",
+                    "description": "Signal key"
+                  },
+                  "condition": {
+                    "type": "string",
+                    "description": "Condition to check",
+                    "enum": ["HasValue", "IsTrue", "IsFalse", "Exists"]
+                  },
+                  "value": {
+                    "description": "Expected value for comparison"
+                  }
+                },
+                "required": ["signal"]
+              }
+            ]
+          }
+        },
+        "skip_when": {
+          "type": "array",
+          "description": "Signals that cause the component to be skipped",
+          "items": {
+            "type": "string"
+          }
+        },
+        "when": {
+          "type": "array",
+          "description": "Conditional expressions (e.g., 'detection.risk_score > 0.5')",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "emits": {
+      "type": "object",
+      "description": "Signals emitted during component lifecycle",
+      "properties": {
+        "on_start": {
+          "type": "array",
+          "description": "Signals emitted when component starts",
+          "items": {
+            "type": "string"
+          }
+        },
+        "on_complete": {
+          "type": "array",
+          "description": "Signals emitted when component completes",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/$defs/signalDefinition"
+              }
+            ]
+          }
+        },
+        "on_failure": {
+          "type": "array",
+          "description": "Signals emitted when component fails",
+          "items": {
+            "type": "string"
+          }
+        },
+        "conditional": {
+          "type": "array",
+          "description": "Signals emitted conditionally",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "when": {
+                "type": "string",
+                "description": "Condition expression"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": ["key", "when"]
+          }
+        }
+      }
+    },
+    "listens": {
+      "type": "object",
+      "description": "Signals the component listens to from other components",
+      "properties": {
+        "required": {
+          "type": "array",
+          "description": "Signals that must be present before execution",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optional": {
+          "type": "array",
+          "description": "Signals that may enhance execution if present",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lane": {
+      "type": "object",
+      "description": "Execution lane configuration for resource management",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Lane name",
+          "enum": ["fast", "normal", "slow", "llm", "io"]
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "description": "Maximum concurrent executions in this lane",
+          "minimum": 1,
+          "default": 8
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Priority within the lane (higher = more priority)",
+          "minimum": 0,
+          "maximum": 1000
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "description": "Resource budget constraints",
+      "properties": {
+        "max_duration": {
+          "type": "string",
+          "description": "Maximum execution duration (TimeSpan format)",
+          "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?$"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Maximum tokens (for LLM components)",
+          "minimum": 1
+        },
+        "max_cost": {
+          "type": "number",
+          "description": "Maximum cost in dollars",
+          "minimum": 0
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration bindings and overrides",
+      "properties": {
+        "bindings": {
+          "type": "array",
+          "description": "Configuration key bindings",
+          "items": {
+            "type": "object",
+            "properties": {
+              "config_key": {
+                "type": "string",
+                "description": "Configuration key path"
+              },
+              "skip_if_false": {
+                "type": "boolean",
+                "description": "Skip component if config value is false"
+              },
+              "skip_if_null": {
+                "type": "boolean",
+                "description": "Skip component if config value is null"
+              }
+            },
+            "required": ["config_key"]
+          }
+        }
+      }
+    }
+  }
+}

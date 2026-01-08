@@ -1,4 +1,4 @@
-name: Publish NuGet Package
+name: Publish NuGet Packages
 
 on:
   push:
@@ -54,11 +54,55 @@ jobs:
       - name: Test
         run: dotnet test StyloFlow.sln --configuration Release --no-build --verbosity normal
 
-      - name: Pack
+      - name: Pack all packages
         run: |
-          dotnet pack src/StyloFlow/StyloFlow.csproj \
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          mkdir -p ./nupkg
+
+          # Pack all StyloFlow packages
+          dotnet pack src/StyloFlow.Core/StyloFlow.Core.csproj \
             --configuration Release --no-build \
-            -p:PackageVersion=${{ steps.version.outputs.VERSION }} \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Core/StyloFlow.Retrieval.Core.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Documents/StyloFlow.Retrieval.Documents.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Images/StyloFlow.Retrieval.Images.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Audio/StyloFlow.Retrieval.Audio.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Video/StyloFlow.Retrieval.Video.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Retrieval.Data/StyloFlow.Retrieval.Data.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Dashboard.Core/StyloFlow.Dashboard.Core.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
+            --output ./nupkg
+
+          dotnet pack src/StyloFlow.Complete/StyloFlow.Complete.csproj \
+            --configuration Release --no-build \
+            -p:PackageVersion=$VERSION \
             --output ./nupkg
 
       - name: List packages

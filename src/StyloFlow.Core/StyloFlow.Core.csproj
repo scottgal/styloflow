@@ -7,13 +7,13 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>StyloFlow</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>Mostlylucid.StyloFlow</PackageId>
+    <PackageId>Mostlylucid.StyloFlow.Core</PackageId>
     <Version>2.0.0</Version>
     <Authors>Scott Galloway</Authors>
     <Company>Mostlylucid</Company>
     <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
-    <Description>StyloFlow - Declarative orchestration infrastructure with YAML-driven configuration, blackboard pattern, and signal-based coordination.</Description>
-    <PackageTags>orchestration;workflow;blackboard;signals;yaml;configuration</PackageTags>
+    <Description>StyloFlow Core - Foundation layer with YAML-driven configuration, manifest loading, entity type system, and orchestration infrastructure.</Description>
+    <PackageTags>orchestration;workflow;yaml;configuration;manifests</PackageTags>
     <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
     <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>

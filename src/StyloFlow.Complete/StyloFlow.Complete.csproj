@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>StyloFlow</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Mostlylucid.StyloFlow.Complete</PackageId>
+    <Version>2.0.0</Version>
+    <Authors>Scott Galloway</Authors>
+    <Company>Mostlylucid</Company>
+    <Copyright>Copyright (c) Scott Galloway 2025</Copyright>
+    <Description>StyloFlow Complete - All StyloFlow functionality in a single package. Includes Core, Retrieval (Documents, Images, Audio, Video, Data), Dashboard, and all analysis capabilities.</Description>
+    <PackageTags>orchestration;workflow;retrieval;analysis;complete;bundle</PackageTags>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <!-- Reference all sub-packages -->
+  <ItemGroup>
+    <ProjectReference Include="..\StyloFlow.Core\StyloFlow.Core.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Core\StyloFlow.Retrieval.Core.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Documents\StyloFlow.Retrieval.Documents.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Images\StyloFlow.Retrieval.Images.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Audio\StyloFlow.Retrieval.Audio.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Video\StyloFlow.Retrieval.Video.csproj" />
+    <ProjectReference Include="..\StyloFlow.Retrieval.Data\StyloFlow.Retrieval.Data.csproj" />
+    <ProjectReference Include="..\StyloFlow.Dashboard.Core\StyloFlow.Dashboard.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
