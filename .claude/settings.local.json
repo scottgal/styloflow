@@ -20,7 +20,9 @@
       "WebSearch",
       "Bash(dotnet run:*)",
       "Bash(dotnet pack:*)",
-      "Bash(CI=true dotnet build:*)"
+      "Bash(CI=true dotnet build:*)",
+      "Bash(ls:*)",
+      "Bash(CI=true dotnet test:*)"
     ]
   }
 }

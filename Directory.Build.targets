@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Disable auto-packing during CI builds (CI env var is set by GitHub Actions) -->
+    <GeneratePackageOnBuild Condition="'$(CI)' == 'true'">false</GeneratePackageOnBuild>
+  </PropertyGroup>
+</Project>
