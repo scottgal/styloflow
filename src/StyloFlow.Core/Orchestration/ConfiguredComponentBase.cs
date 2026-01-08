@@ -4,15 +4,64 @@ using StyloFlow.Manifests;
 namespace StyloFlow.Orchestration;
 
 /// <summary>
+/// Interface for components that support trigger-based execution.
+/// Ported from BotDetection's mature IContributingDetector pattern.
+/// </summary>
+public interface ITriggerableComponent
+{
+    /// <summary>
+    /// Unique name of this component.
+    /// </summary>
+    string Name { get; }
+
+    /// <summary>
+    /// Priority determines execution order. Lower = runs first.
+    /// </summary>
+    int Priority { get; }
+
+    /// <summary>
+    /// Whether this component is enabled.
+    /// </summary>
+    bool IsEnabled { get; }
+
+    /// <summary>
+    /// Trigger conditions that must be met before this component runs.
+    /// Empty = no conditions, runs in the first wave.
+    /// </summary>
+    IReadOnlyList<TriggerCondition> TriggerConditions { get; }
+
+    /// <summary>
+    /// Maximum time to wait for trigger conditions before skipping.
+    /// </summary>
+    TimeSpan TriggerTimeout { get; }
+
+    /// <summary>
+    /// Maximum time allowed for this component to execute.
+    /// </summary>
+    TimeSpan ExecutionTimeout { get; }
+
+    /// <summary>
+    /// Whether this component can be skipped if it times out or fails.
+    /// </summary>
+    bool IsOptional { get; }
+}
+
+/// <summary>
 /// Base class for config-driven orchestrated components.
 /// Provides convenient access to YAML manifest configuration with appsettings overrides.
 /// Eliminates magic numbers by pulling all values from configuration.
+///
+/// FEATURES FROM BOTDETECTION:
+/// - TriggerConditions for wave-based execution
+/// - Execution timeout and optional skip behavior
+/// - PII-safe signal handling patterns
 /// </summary>
-public abstract class ConfiguredComponentBase
+public abstract class ConfiguredComponentBase : ITriggerableComponent
 {
     private readonly IConfigProvider _configProvider;
     private ComponentDefaults? _cachedConfig;
     private ComponentManifest? _cachedManifest;
+    private IReadOnlyList<TriggerCondition>? _cachedTriggers;
 
     protected ConfiguredComponentBase(IConfigProvider configProvider)
     {
@@ -122,4 +171,97 @@ public abstract class ConfiguredComponentBase
     {
         return GetParam(featureName, false);
     }
+
+    // ===== ITriggerableComponent implementation =====
+
+    /// <summary>
+    /// Component name from manifest or class name.
+    /// </summary>
+    public virtual string Name => Manifest?.Name ?? ManifestName;
+
+    /// <summary>
+    /// Priority from manifest (lower = runs first).
+    /// </summary>
+    public virtual int Priority => Manifest?.Priority ?? 100;
+
+    /// <summary>
+    /// Whether this component is enabled (from manifest or config).
+    /// </summary>
+    public virtual bool IsEnabled => Manifest?.Enabled ?? true;
+
+    /// <summary>
+    /// Trigger conditions parsed from manifest.
+    /// Override to define triggers programmatically.
+    /// </summary>
+    public virtual IReadOnlyList<TriggerCondition> TriggerConditions =>
+        _cachedTriggers ??= ParseTriggerConditions();
+
+    /// <summary>
+    /// Maximum time to wait for triggers (defaults to 500ms).
+    /// </summary>
+    public virtual TimeSpan TriggerTimeout =>
+        TimeSpan.FromMilliseconds(GetParam("trigger_timeout_ms", 500));
+
+    /// <summary>
+    /// Maximum execution time (from timing config).
+    /// </summary>
+    public virtual TimeSpan ExecutionTimeout =>
+        TimeSpan.FromMilliseconds(TimeoutMs > 0 ? TimeoutMs : 2000);
+
+    /// <summary>
+    /// Whether this component can be skipped on timeout/failure.
+    /// </summary>
+    public virtual bool IsOptional => GetParam("optional", true);
+
+    /// <summary>
+    /// Parse trigger conditions from manifest YAML.
+    /// </summary>
+    private IReadOnlyList<TriggerCondition> ParseTriggerConditions()
+    {
+        var triggers = new List<TriggerCondition>();
+        var manifest = Manifest;
+        if (manifest?.Triggers?.Requires == null) return triggers;
+
+        foreach (var req in manifest.Triggers.Requires)
+        {
+            if (string.IsNullOrEmpty(req.Signal)) continue;
+
+            if (req.Value != null)
+            {
+                // Value comparison trigger
+                if (req.Value is bool boolVal)
+                    triggers.Add(new SignalValueTrigger<bool>(req.Signal, boolVal));
+                else if (req.Value is int intVal)
+                    triggers.Add(new SignalValueTrigger<int>(req.Signal, intVal));
+                else if (req.Value is double dblVal)
+                    triggers.Add(new SignalValueTrigger<double>(req.Signal, dblVal));
+                else
+                    triggers.Add(new SignalValueTrigger<string>(req.Signal, req.Value.ToString() ?? ""));
+            }
+            else
+            {
+                // Signal existence trigger
+                triggers.Add(new SignalExistsTrigger(req.Signal));
+            }
+        }
+
+        return triggers;
+    }
+
+    // ===== Contribution helpers (from BotDetection) =====
+
+    /// <summary>
+    /// Helper to return a single result.
+    /// </summary>
+    protected static IReadOnlyList<T> Single<T>(T item) => new[] { item };
+
+    /// <summary>
+    /// Helper to return multiple results.
+    /// </summary>
+    protected static IReadOnlyList<T> Multiple<T>(params T[] items) => items;
+
+    /// <summary>
+    /// Helper to return empty results.
+    /// </summary>
+    protected static IReadOnlyList<T> None<T>() => Array.Empty<T>();
 }

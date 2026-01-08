@@ -37,7 +37,8 @@
       "Bash(node:*)",
       "Bash(npm install:*)",
       "Bash(timeout /t 3 /nobreak:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(python3:*)"
     ]
   }
 }
