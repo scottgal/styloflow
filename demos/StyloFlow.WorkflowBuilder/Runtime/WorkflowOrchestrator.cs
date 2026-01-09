@@ -1,25 +1,14 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Mostlylucid.Ephemeral;
 using StyloFlow.WorkflowBuilder.Atoms;
-using StyloFlow.WorkflowBuilder.Atoms.Analyzers;
-using StyloFlow.WorkflowBuilder.Atoms.Config;
-using StyloFlow.WorkflowBuilder.Atoms.Constrainers;
-using StyloFlow.WorkflowBuilder.Atoms.Coordinators;
-using StyloFlow.WorkflowBuilder.Atoms.Fetchers;
-using StyloFlow.WorkflowBuilder.Atoms.Proposers;
-using StyloFlow.WorkflowBuilder.Atoms.Renderers;
-using StyloFlow.WorkflowBuilder.Atoms.Sensors;
-using StyloFlow.WorkflowBuilder.Atoms.MapReduce;
-using StyloFlow.WorkflowBuilder.Atoms.Routers;
-using StyloFlow.WorkflowBuilder.Atoms.Shapers;
-using StyloFlow.WorkflowBuilder.Atoms.Windows;
 using StyloFlow.WorkflowBuilder.Models;
 
 namespace StyloFlow.WorkflowBuilder.Runtime;
 
 /// <summary>
 /// Workflow orchestrator using Ephemeral's EphemeralWorkCoordinator.
-/// Replaces the manual topological sort with signal-driven execution.
+/// Uses auto-discovery to find atom executors - no manual registration needed.
 /// </summary>
 public sealed class WorkflowOrchestrator : IAsyncDisposable
 {
@@ -27,85 +16,25 @@ public sealed class WorkflowOrchestrator : IAsyncDisposable
     private readonly OllamaService _ollama;
     private readonly WorkflowStorage _storage;
     private readonly SignalRCoordinator _signalRCoordinator;
-    private readonly Dictionary<string, Func<WorkflowAtomContext, Task>> _atomExecutors;
+    private readonly AtomExecutorRegistry _registry;
+    private readonly ILogger<WorkflowOrchestrator>? _logger;
 
     public WorkflowOrchestrator(
         SignalSink globalSink,
         OllamaService ollama,
         WorkflowStorage storage,
-        SignalRCoordinator signalRCoordinator)
+        SignalRCoordinator signalRCoordinator,
+        AtomExecutorRegistry registry,
+        ILogger<WorkflowOrchestrator>? logger = null)
     {
         _globalSink = globalSink;
         _ollama = ollama;
         _storage = storage;
         _signalRCoordinator = signalRCoordinator;
+        _registry = registry;
+        _logger = logger;
 
-        // Register atom executors by manifest name
-        _atomExecutors = new Dictionary<string, Func<WorkflowAtomContext, Task>>
-        {
-            // Sensors
-            ["timer-trigger"] = TimerTriggerSensor.ExecuteAsync,
-            ["http-receiver"] = HttpReceiverSensor.ExecuteAsync,
-
-            // Fetchers
-            ["http-fetch"] = HttpFetchAtom.ExecuteAsync,
-            ["json-api"] = JsonApiFetcherAtom.ExecuteAsync,
-
-            // Analyzers/Extractors
-            ["text-analyzer"] = TextAnalyzerExtractor.ExecuteAsync,
-
-            // Proposers
-            ["sentiment-detector"] = SentimentDetectorProposer.ExecuteAsync,
-
-            // Constrainers/Filters
-            ["threshold-filter"] = ThresholdFilterConstrainer.ExecuteAsync,
-
-            // Renderers/Emitters
-            ["email-sender"] = EmailSenderRenderer.ExecuteAsync,
-            ["log-writer"] = LogWriterRenderer.ExecuteAsync,
-
-            // Shapers (modular synth analogues)
-            ["signal-clamp"] = SignalClampShaper.ExecuteAsync,
-            ["signal-filter"] = SignalFilterShaper.ExecuteAsync,
-            ["signal-comparator"] = SignalComparatorShaper.ExecuteAsync,
-            ["signal-mixer"] = SignalMixerShaper.ExecuteAsync,
-            ["signal-quantizer"] = SignalQuantizerShaper.ExecuteAsync,
-            ["signal-attenuverter"] = SignalAttenuverterShaper.ExecuteAsync,
-            ["signal-switch"] = SignalSwitchShaper.ExecuteAsync,
-            ["signal-slew"] = SignalSlewShaper.ExecuteAsync,
-            ["signal-delay"] = SignalDelayShaper.ExecuteAsync,
-
-            // Config sources
-            ["config-env"] = ConfigEnvSensor.ExecuteAsync,
-            ["config-file"] = ConfigFileSensor.ExecuteAsync,
-            ["config-db"] = ConfigDbSensor.ExecuteAsync,
-            ["config-vault"] = ConfigVaultSensor.ExecuteAsync,
-
-            // Coordinators
-            ["coordinator-keyed"] = KeyedCoordinatorAtom.ExecuteAsync,
-
-            // Routers
-            ["signal-router"] = SignalRouterAtom.ExecuteAsync,
-
-            // Windows (sliding window for entity accumulation and behavioral analysis)
-            ["window-collector"] = WindowCollectorAtom.ExecuteAsync,
-            ["window-sampler"] = WindowSamplerAtom.ExecuteAsync,
-            ["window-pattern-detector"] = WindowPatternDetectorAtom.ExecuteAsync,
-            ["window-stats"] = WindowStatsAtom.ExecuteAsync,
-
-            // MapReduce (accumulation, scoring, reduction)
-            ["accumulator"] = AccumulatorAtom.ExecuteAsync,
-            ["reducer"] = ReducerAtom.ExecuteAsync,
-            ["rrf-scorer"] = RRFScorerAtom.ExecuteAsync,
-            ["mmr-scorer"] = MMRScorerAtom.ExecuteAsync,
-            ["bm25-scorer"] = BM25ScorerAtom.ExecuteAsync,
-            ["reduce-sum"] = SumReducerAtom.ExecuteAsync,
-            ["reduce-avg"] = AvgReducerAtom.ExecuteAsync,
-            ["topk-selector"] = TopKSelectorAtom.ExecuteAsync,
-            ["iterative-reducer"] = IterativeReducerAtom.ExecuteAsync,
-            ["deduplicator"] = DeduplicatorAtom.ExecuteAsync,
-            ["tfidf-scorer"] = TfIdfScorerAtom.ExecuteAsync
-        };
+        _logger?.LogInformation("WorkflowOrchestrator initialized with {Count} atom executors", _registry.Count);
     }
 
     /// <summary>
@@ -207,9 +136,10 @@ public sealed class WorkflowOrchestrator : IAsyncDisposable
     {
         var node = execution.Node;
 
-        if (!_atomExecutors.TryGetValue(node.ManifestName, out var executor))
+        if (!_registry.TryGetExecutor(node.ManifestName, out var executor) || executor == null)
         {
             _signalRCoordinator.EmitLog(runId, node.Id, $"No executor found for: {node.ManifestName}");
+            _logger?.LogWarning("No executor found for manifest: {ManifestName}", node.ManifestName);
             return;
         }
 

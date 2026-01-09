@@ -1,7 +1,9 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Mostlylucid.Ephemeral;
 using StyloFlow.WorkflowBuilder.Hubs;
 using StyloFlow.WorkflowBuilder.Middleware;
@@ -34,6 +36,18 @@ public static class ServiceExtensions
         services.AddSingleton<IWorkflowStore, InMemoryWorkflowStore>();
         services.AddSingleton<WorkflowValidator>();
 
+        // Atom executor registry with auto-discovery
+        services.AddSingleton(sp =>
+        {
+            var logger = sp.GetService<ILogger<AtomExecutorRegistry>>();
+            var registry = new AtomExecutorRegistry(logger);
+
+            // Auto-discover atoms from the WorkflowBuilder assembly
+            registry.DiscoverAtoms(typeof(ServiceExtensions).Assembly);
+
+            return registry;
+        });
+
         // SignalR
         services.AddSignalR();
 
@@ -44,12 +58,14 @@ public static class ServiceExtensions
             return new SignalRCoordinator(hubContext, globalSink);
         });
 
-        // Workflow orchestrator - uses Ephemeral's EphemeralWorkCoordinator
+        // Workflow orchestrator - uses auto-discovered atoms
         services.AddSingleton(sp => new WorkflowOrchestrator(
             sp.GetRequiredService<SignalSink>(),
             sp.GetRequiredService<OllamaService>(),
             sp.GetRequiredService<WorkflowStorage>(),
-            sp.GetRequiredService<SignalRCoordinator>()));
+            sp.GetRequiredService<SignalRCoordinator>(),
+            sp.GetRequiredService<AtomExecutorRegistry>(),
+            sp.GetService<ILogger<WorkflowOrchestrator>>()));
 
         return services;
     }

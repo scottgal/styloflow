@@ -38,7 +38,8 @@
       "Bash(npm install:*)",
       "Bash(timeout /t 3 /nobreak:*)",
       "Bash(ping:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(dotnet new:*)"
     ]
   }
 }

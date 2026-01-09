@@ -13,10 +13,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OllamaSharp" Version="4.0.6" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-    <PackageReference Include="DuckDB.NET.Data" Version="1.1.3.1" />
-    <PackageReference Include="Mostlylucid.Ephemeral.Complete" Version="2.1.0" />
+    <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="DuckDB.NET.Data" />
+    <PackageReference Include="Mostlylucid.Ephemeral" />
+    <PackageReference Include="Mostlylucid.Ephemeral.Atoms.Taxonomy" />
+    <PackageReference Include="Mostlylucid.Ephemeral.Atoms.BurstDetection" />
   </ItemGroup>
 
   <!-- Embed YAML manifests -->

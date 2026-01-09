@@ -1,0 +1,74 @@
+name: burst-detector
+kind: detector
+version: 1.0.0
+description: |
+  Per-identity burst detection using Ephemeral's BurstDetectionAtom.
+  Detects when a specific identity (user, IP, session) is making requests
+  at an unusually high rate, indicating potential abuse or automated traffic.
+  Uses privacy-preserving XxHash64 for identity hashing.
+
+taxonomy:
+  kind: detector
+  category: security
+
+signals:
+  triggers:
+    - signal: identity.key
+      required: false
+      description: Identity key to track (user ID, IP, session). Falls back to run ID if not provided.
+
+  emits:
+    - key: burst.detected
+      type: boolean
+      description: True if a burst was detected for this identity
+
+    - key: burst.count
+      type: integer
+      description: Number of requests in the current window
+
+    - key: burst.duration
+      type: number
+      description: Duration of the burst in seconds (if detected)
+
+    - key: burst.rate
+      type: number
+      description: Current request rate (requests per second)
+
+    - key: burst.description
+      type: string
+      description: Human-readable description of the detection result
+
+config:
+  window_seconds:
+    type: integer
+    default: 30
+    description: Size of the sliding window in seconds
+
+  threshold:
+    type: integer
+    default: 10
+    description: Number of requests in window to trigger burst detection
+
+  identity_key:
+    type: string
+    required: false
+    description: Static identity key (overrides signal). Use signals for dynamic identity.
+
+examples:
+  - name: Rate limit check
+    config:
+      window_seconds: 60
+      threshold: 100
+    description: Detect more than 100 requests per minute
+
+  - name: DDoS pattern detection
+    config:
+      window_seconds: 10
+      threshold: 50
+    description: Detect rapid bursts of 50+ requests in 10 seconds
+
+  - name: API abuse detection
+    config:
+      window_seconds: 300
+      threshold: 1000
+    description: Detect sustained high-volume API usage
