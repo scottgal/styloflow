@@ -8,8 +8,8 @@
     <RootNamespace>StyloFlow.Retrieval</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Mostlylucid.StyloFlow.Retrieval.Core</PackageId>
-    <Description>StyloFlow Retrieval Core - Shared retrieval primitives including scoring algorithms (BM25, TF-IDF), SIMD-optimized vector math, string similarity, and signal-based analysis system.</Description>
-    <PackageTags>retrieval;scoring;bm25;tfidf;vectors;simd;signals;analysis</PackageTags>
+    <Description>StyloFlow Retrieval Core - Universal retrieval infrastructure for cross-modal search (documents, images, audio, video). Includes signal-based analysis waves, wave orchestration, unified entity model, and scoring algorithms (BM25, TF-IDF, vector similarity).</Description>
+    <PackageTags>retrieval;scoring;bm25;tfidf;vectors;simd;signals;analysis;waves;orchestration;entities;crossmodal</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
