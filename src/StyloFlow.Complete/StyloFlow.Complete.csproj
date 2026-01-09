@@ -10,7 +10,8 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeContentInPack>false</IncludeContentInPack>
     <SuppressDependenciesWhenPacking>false</SuppressDependenciesWhenPacking>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' != 'Release'">false</GeneratePackageOnBuild>
 
     <!-- Package metadata -->
     <PackageId>Mostlylucid.StyloFlow.Complete</PackageId>
