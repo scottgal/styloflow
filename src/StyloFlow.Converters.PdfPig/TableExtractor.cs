@@ -64,107 +64,14 @@ public class PdfTableExtractor
     }
 
     /// <summary>
-    /// Extract tables from a single page.
+    /// Extract tables from a single page using layout analysis.
     /// </summary>
     public List<ExtractedTable> ExtractTablesFromPage(Page page, int pageNum, TableExtractionOptions? options = null)
     {
         options ??= new TableExtractionOptions();
-        var tables = new List<ExtractedTable>();
 
-        try
-        {
-            // Use PdfPig's table extractor
-            var detectedTables = page.GetTables();
-            var tableIndex = 0;
-
-            foreach (var table in detectedTables)
-            {
-                var extractedTable = ConvertTable(table, pageNum, tableIndex++, options);
-                if (extractedTable != null && extractedTable.Rows.Count >= options.MinRows)
-                {
-                    tables.Add(extractedTable);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogDebug(ex, "Table detection failed on page {Page}, trying heuristic extraction", pageNum);
-
-            // Fallback to heuristic table detection
-            if (options.UseHeuristicFallback)
-            {
-                var heuristicTables = ExtractTablesHeuristically(page, pageNum, options);
-                tables.AddRange(heuristicTables);
-            }
-        }
-
-        return tables;
-    }
-
-    private ExtractedTable? ConvertTable(
-        UglyToad.PdfPig.DocumentLayoutAnalysis.TableExtractor.Table table,
-        int pageNum,
-        int tableIndex,
-        TableExtractionOptions options)
-    {
-        var rows = new List<TableRow>();
-        var columnCount = 0;
-
-        foreach (var row in table.Rows)
-        {
-            var cells = new List<TableCell>();
-
-            foreach (var cell in row.Cells)
-            {
-                var cellText = string.Join(" ", cell.Words.Select(w => w.Text)).Trim();
-
-                cells.Add(new TableCell
-                {
-                    Text = cellText,
-                    RowIndex = rows.Count,
-                    ColumnIndex = cells.Count,
-                    X = cell.BoundingBox.Left,
-                    Y = cell.BoundingBox.Bottom,
-                    Width = cell.BoundingBox.Width,
-                    Height = cell.BoundingBox.Height
-                });
-            }
-
-            if (cells.Count > columnCount)
-                columnCount = cells.Count;
-
-            rows.Add(new TableRow { Cells = cells });
-        }
-
-        if (rows.Count == 0)
-            return null;
-
-        // Detect if first row is header
-        var hasHeader = options.AutoDetectHeader && DetectHeader(rows);
-
-        // Extract column names
-        var columnNames = hasHeader && rows.Count > 0
-            ? rows[0].Cells.Select((c, i) => string.IsNullOrWhiteSpace(c.Text) ? $"Column{i + 1}" : SanitizeColumnName(c.Text)).ToList()
-            : Enumerable.Range(1, columnCount).Select(i => $"Column{i}").ToList();
-
-        return new ExtractedTable
-        {
-            TableId = $"page{pageNum}_table{tableIndex}",
-            PageNumber = pageNum,
-            TableIndex = tableIndex,
-            Rows = rows,
-            ColumnCount = columnCount,
-            RowCount = rows.Count,
-            ColumnNames = columnNames,
-            HasHeader = hasHeader,
-            BoundingBox = new TableBoundingBox
-            {
-                X = table.BoundingBox.Left,
-                Y = table.BoundingBox.Bottom,
-                Width = table.BoundingBox.Width,
-                Height = table.BoundingBox.Height
-            }
-        };
+        // Use heuristic table detection based on word alignment
+        return ExtractTablesHeuristically(page, pageNum, options);
     }
 
     private List<ExtractedTable> ExtractTablesHeuristically(Page page, int pageNum, TableExtractionOptions options)

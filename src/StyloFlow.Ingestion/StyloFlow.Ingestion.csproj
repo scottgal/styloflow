@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StyloFlow.Core\StyloFlow.Core.csproj" />
+    <ProjectReference Include="..\StyloFlow.Converters.Core\StyloFlow.Converters.Core.csproj" />
   </ItemGroup>
 
 </Project>
