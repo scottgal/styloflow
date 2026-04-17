@@ -1002,7 +1002,7 @@ Signatures are stored in `.sig.json` files alongside packages:
 
 ## License
 
-This is free and unencumbered software released into the public domain - see [UNLICENSE](UNLICENSE) for details.
+This is free and unencumbered software released into the public domain - see [LICENSE](LICENSE) for details.
 
 ---
 
