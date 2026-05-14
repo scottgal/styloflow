@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,8 +16,12 @@ namespace StyloFlow;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Add StyloFlow services with file system manifest loading.
+    /// Add StyloFlow services with file system manifest loading. NativeAOT
+    /// callers should suppress the propagated YamlDotNet warning at the call
+    /// site (manifest types are stable and rooted via TrimmerRootAssembly).
     /// </summary>
+    [RequiresDynamicCode("FileSystemManifestLoader uses YamlDotNet's reflection-based deserializer.")]
+    [RequiresUnreferencedCode("FileSystemManifestLoader uses YamlDotNet's reflection-based deserializer.")]
     public static IServiceCollection AddStyloFlow(
         this IServiceCollection services,
         string[] manifestDirectories,
@@ -43,7 +48,11 @@ public static class DependencyInjection
 
     /// <summary>
     /// Add StyloFlow services with embedded resource manifest loading.
+    /// NativeAOT callers should suppress the propagated YamlDotNet warning at
+    /// the call site.
     /// </summary>
+    [RequiresDynamicCode("EmbeddedManifestLoader uses YamlDotNet's reflection-based deserializer.")]
+    [RequiresUnreferencedCode("EmbeddedManifestLoader uses YamlDotNet's reflection-based deserializer.")]
     public static IServiceCollection AddStyloFlowFromAssemblies(
         this IServiceCollection services,
         Assembly[] sourceAssemblies,
@@ -92,7 +101,10 @@ public static class DependencyInjection
 
     /// <summary>
     /// Add StyloFlow entity type services (registry, loader, validator).
+    /// NativeAOT callers should suppress the propagated YamlDotNet warning.
     /// </summary>
+    [RequiresDynamicCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
+    [RequiresUnreferencedCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
     public static IServiceCollection AddStyloFlowEntities(
         this IServiceCollection services,
         Action<EntityTypeRegistry>? configureRegistry = null)
@@ -126,6 +138,8 @@ public static class DependencyInjection
     /// <summary>
     /// Add StyloFlow entity types from YAML files in a directory.
     /// </summary>
+    [RequiresDynamicCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
+    [RequiresUnreferencedCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
     public static IServiceCollection AddStyloFlowEntitiesFromDirectory(
         this IServiceCollection services,
         string directory,
@@ -148,6 +162,8 @@ public static class DependencyInjection
     /// <summary>
     /// Add StyloFlow entity types from embedded resources in assemblies.
     /// </summary>
+    [RequiresDynamicCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
+    [RequiresUnreferencedCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer.")]
     public static IServiceCollection AddStyloFlowEntitiesFromAssemblies(
         this IServiceCollection services,
         Assembly[] assemblies,
@@ -202,9 +218,17 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Add multiple StyloFlow modules from assemblies.
-    /// Scans for types implementing IStyloflowModule.
+    /// Add multiple StyloFlow modules from assemblies. Scans for types
+    /// implementing IStyloflowModule.
+    ///
+    /// NativeAOT: assembly scanning + Activator.CreateInstance is incompatible
+    /// with AOT. For AOT scenarios use the build-time composition pattern
+    /// instead - call <see cref="AddStyloFlowModule"/> explicitly for each
+    /// module instance from your Program.cs (mirrors the [ModuleEntryPoint]
+    /// pattern in stylobot's pack architecture).
     /// </summary>
+    [RequiresDynamicCode("Assembly scanning uses Activator.CreateInstance which requires runtime code generation.")]
+    [RequiresUnreferencedCode("Assembly scanning uses Assembly.GetTypes which may discover types removed by trimming.")]
     public static IServiceCollection AddStyloFlowModulesFromAssemblies(
         this IServiceCollection services,
         Assembly[] assemblies,

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using StyloFlow.Manifests;
@@ -9,7 +10,13 @@ namespace StyloFlow.Entities;
 /// <summary>
 /// Loads entity type definitions from YAML files.
 /// Supports file system and embedded resources.
+/// Same NativeAOT caveat as <see cref="StyloFlow.Manifests.EmbeddedManifestLoader"/>:
+/// YamlDotNet's reflection-based deserializer is incompatible with AOT;
+/// callers either root the entity type definitions or migrate to the
+/// StaticDeserializerBuilder source-generated path.
 /// </summary>
+[RequiresDynamicCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer; root the entity types or migrate to StaticDeserializerBuilder.")]
+[RequiresUnreferencedCode("EntityTypeLoader uses YamlDotNet's reflection-based deserializer; root the entity types or migrate to StaticDeserializerBuilder.")]
 public class EntityTypeLoader
 {
     private readonly IDeserializer _deserializer;

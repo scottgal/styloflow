@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
@@ -9,7 +10,18 @@ namespace StyloFlow.Manifests;
 /// <summary>
 /// Loads YAML manifests from embedded resources in assemblies.
 /// Supports multiple manifest directories and hot reload.
+///
+/// NativeAOT: <see cref="DeserializerBuilder"/> uses reflection to map YAML
+/// fields to ComponentManifest properties; that path is incompatible with
+/// AOT. Callers running under AOT either:
+///   1. Suppress IL2026/IL3050 at the registration site (manifest types are
+///      known and rooted via the consumer's <c>TrimmerRootAssembly</c>), or
+///   2. Switch to YamlDotNet's <c>StaticDeserializerBuilder</c> + source
+///      generator and pass an <see cref="IDeserializer"/> in (constructor
+///      overload coming in a future release).
 /// </summary>
+[RequiresDynamicCode("EmbeddedManifestLoader uses YamlDotNet's reflection-based deserializer; root the manifest types or migrate to StaticDeserializerBuilder.")]
+[RequiresUnreferencedCode("EmbeddedManifestLoader uses YamlDotNet's reflection-based deserializer; root the manifest types or migrate to StaticDeserializerBuilder.")]
 public class EmbeddedManifestLoader : IManifestLoader
 {
     private readonly ConcurrentDictionary<string, ComponentManifest> _manifests = new();
@@ -119,7 +131,10 @@ public class EmbeddedManifestLoader : IManifestLoader
 /// <summary>
 /// Loads YAML manifests from file system directories.
 /// Supports file watching for hot reload.
+/// Same NativeAOT caveat as <see cref="EmbeddedManifestLoader"/>.
 /// </summary>
+[RequiresDynamicCode("FileSystemManifestLoader uses YamlDotNet's reflection-based deserializer; root the manifest types or migrate to StaticDeserializerBuilder.")]
+[RequiresUnreferencedCode("FileSystemManifestLoader uses YamlDotNet's reflection-based deserializer; root the manifest types or migrate to StaticDeserializerBuilder.")]
 public class FileSystemManifestLoader : IManifestLoader
 {
     private readonly ConcurrentDictionary<string, ComponentManifest> _manifests = new();

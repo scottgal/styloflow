@@ -107,13 +107,20 @@ public sealed class LicenseManager : ILicenseManager
                 return SetState(LicenseState.Invalid, LicenseValidationResult.Failure("Failed to parse license"));
             }
 
-            // Verify signature (if vendor key provided)
-            if (!string.IsNullOrEmpty(_options.VendorPublicKey) && !string.IsNullOrEmpty(license.Signature))
+            // Verify signature -- when a vendor public key is configured, signature is MANDATORY.
+            // A missing signature is treated as invalid, not as a grace-mode pass.
+            if (!string.IsNullOrEmpty(_options.VendorPublicKey))
             {
+                if (string.IsNullOrEmpty(license.Signature))
+                {
+                    _logger.LogWarning("License rejected: vendor public key is configured but license has no signature");
+                    return SetState(LicenseState.Invalid, LicenseValidationResult.Failure("License is unsigned -- a signed license is required"));
+                }
+
                 if (!VerifySignature(licenseJson, license.Signature, _options.VendorPublicKey))
                 {
-                    _logger.LogWarning("License signature verification failed");
-                    return SetState(LicenseState.Invalid, LicenseValidationResult.Failure("Invalid signature"));
+                    _logger.LogWarning("License rejected: Ed25519 signature verification failed");
+                    return SetState(LicenseState.Invalid, LicenseValidationResult.Failure("License signature is invalid"));
                 }
             }
 

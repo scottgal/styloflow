@@ -12,6 +12,12 @@
     <PackageTags>orchestration;workflow;yaml;configuration;manifests</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Enable trim + AOT analyzers so warnings surface during normal builds.
+         Setting IsAotCompatible=true also annotates the assembly so consumers
+         (e.g. stylobot's NativeAOT publish) stop emitting the rollup IL3053
+         "produced AOT analysis warnings" warning for this assembly. -->
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>

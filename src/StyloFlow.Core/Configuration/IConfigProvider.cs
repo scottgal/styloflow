@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using StyloFlow.Manifests;
 
 namespace StyloFlow.Configuration;
@@ -22,7 +23,12 @@ public interface IConfigProvider
 
     /// <summary>
     /// Get a typed parameter value with fallback hierarchy.
+    /// Uses ConfigurationBinder.GetValue under the hood; reflection paths are
+    /// only hit for non-primitive T. Callers passing primitives can suppress
+    /// the propagated AOT warning at the call site.
     /// </summary>
+    [RequiresUnreferencedCode("ConfigurationBinder.GetValue<T> may require reflection for non-primitive T.")]
+    [RequiresDynamicCode("ConfigurationBinder.GetValue<T> may use reflection-emit for non-primitive T.")]
     T GetParameter<T>(string componentName, string parameterName, T defaultValue);
 
     /// <summary>

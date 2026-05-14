@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StyloFlow.Manifests;
@@ -64,6 +65,8 @@ public class ConfigProvider : IConfigProvider
         });
     }
 
+    [RequiresUnreferencedCode("ConfigurationBinder.GetValue<T> may require reflection for non-primitive T. Callers using primitives are safe.")]
+    [RequiresDynamicCode("ConfigurationBinder.GetValue<T> may use reflection-emit for non-primitive T. Callers using primitives are safe.")]
     public T GetParameter<T>(string componentName, string parameterName, T defaultValue)
     {
         // 1. Check appsettings override first
@@ -101,6 +104,11 @@ public class ConfigProvider : IConfigProvider
         return _manifestLoader.GetAllManifests();
     }
 
+    // All GetValue calls below bind primitive types (double, int, bool, TimeSpan).
+    // ConfigurationBinder's primitive path doesn't use reflection -the IL2026
+    // warning only fires on non-primitive T, which we never use here.
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only primitive types bound via GetValue<T>")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Only primitive types bound via GetValue<T>")]
     private void ApplyConfigurationOverrides(ComponentDefaults defaults, IConfigurationSection section)
     {
         // Override weights

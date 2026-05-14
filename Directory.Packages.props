@@ -4,9 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Mostlylucid.Ephemeral packages -->
-    <PackageVersion Include="Mostlylucid.Ephemeral" Version="2.3.1" />
-    <PackageVersion Include="Mostlylucid.Ephemeral.Atoms.Taxonomy" Version="2.3.1" />
-    <PackageVersion Include="Mostlylucid.Ephemeral.Atoms.BurstDetection" Version="2.3.1" />
+    <PackageVersion Include="Mostlylucid.Ephemeral" Version="2.3.2" />
+    <PackageVersion Include="Mostlylucid.Ephemeral.Atoms.Taxonomy" Version="2.3.2" />
+    <PackageVersion Include="Mostlylucid.Ephemeral.Atoms.BurstDetection" Version="2.3.2" />
     <!-- Microsoft.Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />

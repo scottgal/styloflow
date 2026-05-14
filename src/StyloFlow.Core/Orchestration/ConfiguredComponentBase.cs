@@ -150,15 +150,23 @@ public abstract class ConfiguredComponentBase : ITriggerableComponent
 
     /// <summary>
     /// Get a typed parameter from YAML with fallback hierarchy.
+    /// Inherits the AOT caveat from <see cref="IConfigProvider.GetParameter{T}"/>.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Forwards to IConfigProvider.GetParameter<T> which may require reflection for non-primitive T.")]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Forwards to IConfigProvider.GetParameter<T> which may use reflection-emit for non-primitive T.")]
     protected T GetParam<T>(string name, T defaultValue)
     {
         return _configProvider.GetParameter(ManifestName, name, defaultValue);
     }
 
     /// <summary>
-    /// Get a string list parameter from YAML.
+    /// Get a string list parameter from YAML. NativeAOT: ConfigurationBinder uses
+    /// reflection to bind into <see cref="List{String}"/>; the warning is real
+    /// for this helper. Callers can suppress at their site if they accept that
+    /// the trimmer keeps List + string available.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ConfigurationBinder uses reflection to bind into List<string>.")]
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("ConfigurationBinder uses reflection to bind into List<string>.")]
     protected IReadOnlyList<string> GetStringListParam(string name)
     {
         return GetParam<List<string>>(name, []) ?? [];
@@ -167,6 +175,8 @@ public abstract class ConfiguredComponentBase : ITriggerableComponent
     /// <summary>
     /// Check if a feature flag is enabled in the manifest.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "GetParam<bool> binds a primitive; no reflection.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050", Justification = "GetParam<bool> binds a primitive; no reflection-emit.")]
     protected bool IsFeatureEnabled(string featureName)
     {
         return GetParam(featureName, false);
@@ -199,6 +209,8 @@ public abstract class ConfiguredComponentBase : ITriggerableComponent
     /// <summary>
     /// Maximum time to wait for triggers (defaults to 500ms).
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "GetParam<int> binds a primitive; no reflection.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050", Justification = "GetParam<int> binds a primitive; no reflection-emit.")]
     public virtual TimeSpan TriggerTimeout =>
         TimeSpan.FromMilliseconds(GetParam("trigger_timeout_ms", 500));
 
@@ -211,6 +223,8 @@ public abstract class ConfiguredComponentBase : ITriggerableComponent
     /// <summary>
     /// Whether this component can be skipped on timeout/failure.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "GetParam<bool> binds a primitive; no reflection.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050", Justification = "GetParam<bool> binds a primitive; no reflection-emit.")]
     public virtual bool IsOptional => GetParam("optional", true);
 
     /// <summary>
