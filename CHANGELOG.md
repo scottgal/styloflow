@@ -5,6 +5,27 @@ All notable changes to StyloFlow are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-05-14
+
+### Changed
+
+- **StyloFlow.Core**: marked `IsAotCompatible=true` and annotated reflection-using
+  entry points with `[RequiresUnreferencedCode]` / `[RequiresDynamicCode]`.
+  Consumers (e.g. stylobot's NativeAOT publish) no longer get the rollup
+  `IL3053 Assembly 'StyloFlow.Core' produced AOT analysis warnings`.
+  - YamlDotNet reflection-based deserializer paths annotated:
+    `EmbeddedManifestLoader`, `FileSystemManifestLoader`, `EntityTypeLoader`,
+    `AddStyloFlow*` extensions.
+  - `IConfigProvider.GetParameter<T>` (and concrete impl + `ConfiguredComponentBase.GetParam<T>`)
+    annotated; primitive call sites (`IsFeatureEnabled`, `IsOptional`,
+    `TriggerTimeout`) carry `[UnconditionalSuppressMessage]` because binding
+    bool / int doesn't need reflection.
+  - `AddStyloFlowModulesFromAssemblies` (Assembly.GetTypes + Activator.CreateInstance)
+    annotated; doc points operators at the build-time `AddStyloFlowModule`
+    registration pattern for AOT scenarios.
+
+Tests: 675/675 pass. Internal AOT analyzer: 0 warnings.
+
 ## [2.4.0] - 2026-02-02
 
 ### Added
