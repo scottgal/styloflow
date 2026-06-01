@@ -6,8 +6,6 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <RootNamespace>StyloFlow.Licensing</RootNamespace>
-    <Version>2.7.0</Version>
-    <PackageVersion>2.7.0</PackageVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Mostlylucid.StyloFlow.Licensing</PackageId>
     <Description>StyloFlow Licensing - System coordinator, license management, work unit metering, and licensing attributes for StyloFlow mesh orchestration.</Description>
