@@ -44,6 +44,17 @@ public sealed record LicenseToken
     /// Vendor signature for verification.
     /// </summary>
     public string? Signature { get; init; }
+
+    /// <summary>
+    /// Domains this license covers. Empty when not applicable.
+    /// Consumers treat the sentinel "*" as "unlimited / any domain".
+    /// </summary>
+    public IReadOnlyList<string> Domains { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Organisation identifier. Null when not applicable.
+    /// </summary>
+    public string? OrgId { get; init; }
 }
 
 /// <summary>
