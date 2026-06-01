@@ -45,4 +45,20 @@ public sealed class LicenseModelsTests
         Assert.Equal(new[] { "acme.com", "acme.co.uk" }, round!.Domains);
         Assert.Equal("org-42", round.OrgId);
     }
+
+    [Fact]
+    public void LicenseToken_DeserializesLegacyJson_DefaultsDomainsToEmptyAndOrgIdToNull()
+    {
+        const string legacyJson = """
+            {"LicenseId":"lic-0","IssuedTo":"acme","IssuedAt":"2025-01-01T00:00:00+00:00",
+             "Expiry":"2026-01-01T00:00:00+00:00","Limits":{"MaxMoleculeSlots":1,"MaxWorkUnitsPerMinute":1},
+             "Tier":"starter"}
+            """;
+
+        var token = JsonSerializer.Deserialize<LicenseToken>(legacyJson);
+
+        Assert.NotNull(token);
+        Assert.Empty(token!.Domains);
+        Assert.Null(token.OrgId);
+    }
 }
