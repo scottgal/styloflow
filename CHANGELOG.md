@@ -5,6 +5,17 @@ All notable changes to StyloFlow are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.1] - 2026-07-05
+
+### Fixed
+
+- **StyloFlow.Core**: annotated `AddOnInitSignal<TCoordinator>` and its
+  internal `InitSignalBootstrap<TCoordinator>` generic parameters with
+  `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]`
+  so the AOT / trimming analyzers see that the coordinator type is
+  eventually passed to `TryAddSingleton<T>` and `GetRequiredService<T>`.
+  Non-blocking IL2091 warnings emitted by the 2.8.0 build gone.
+
 ## [2.8.0] - 2026-07-05
 
 ### Added

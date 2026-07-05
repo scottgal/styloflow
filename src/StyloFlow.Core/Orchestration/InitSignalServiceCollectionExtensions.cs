@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -49,7 +50,8 @@ public static class InitSignalServiceCollectionExtensions
     ///         the raise and the ctor completing.
     ///     </para>
     /// </remarks>
-    public static IServiceCollection AddOnInitSignal<TCoordinator>(
+    public static IServiceCollection AddOnInitSignal<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TCoordinator>(
         this IServiceCollection services,
         string initSignal)
         where TCoordinator : class
@@ -71,7 +73,9 @@ public static class InitSignalServiceCollectionExtensions
 ///     raise. One instance per registered coordinator; kept internal so
 ///     callers cannot depend on the shape.
 /// </summary>
-internal sealed class InitSignalBootstrap<TCoordinator> : IHostedService, IDisposable
+internal sealed class InitSignalBootstrap<
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TCoordinator>
+    : IHostedService, IDisposable
     where TCoordinator : class
 {
     private readonly IInitSignalBus _bus;

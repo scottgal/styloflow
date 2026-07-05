@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Version is set via CI/CD, defaults to 0.0.1-local for dev builds -->
-    <Version>2.8.0</Version>
+    <Version>2.8.1</Version>
     <PackageVersion>$(Version)</PackageVersion>
 
     <!-- Common metadata -->
