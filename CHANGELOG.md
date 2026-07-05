@@ -5,6 +5,35 @@ All notable changes to StyloFlow are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-07-05
+
+### Added
+
+- **StyloFlow.Core: `IInitSignalBus` primitive** for lazy-boot coordinator
+  registration. Producers write to sinks unconditionally; coordinators wake
+  up on first raise of a named init signal.
+  - `IInitSignalBus` + `InitSignalBus` in `StyloFlow.Orchestration` — once-per-signal
+    semantics, `Subscribe` after fire runs handler immediately, handler
+    exceptions swallowed so one bad factory cannot poison others.
+  - DI helpers: `services.AddInitSignalBus()` + `services.AddOnInitSignal<TCoordinator>(initSignal)`.
+    Coordinator is registered as an ordinary singleton whose construction is
+    deferred; an internal `InitSignalBootstrap<T>` hosted service subscribes
+    at boot and resolves the coordinator via
+    `sp.GetRequiredService<T>()` on first raise.
+  - Introduces a `Microsoft.Extensions.Hosting.Abstractions` package
+    reference (~35KB, no runtime cost when the host has no hosted services).
+
+Tests: 688/688 pass. 10 new `InitSignalBusTests` cover idempotent raise,
+subscribe-before + subscribe-after semantics, multiple-handler fan-out,
+dispose-before-fire, exception isolation, singleton registration, deferred
+construction, race-safe when producer beats bootstrap.
+
+Consumers (e.g. stylobot's learning fabric, session store, LLM
+classification) migrate coordinator lifecycles to this primitive by
+registering with `AddOnInitSignal<T>` and hooking their shared sink to
+raise the init signal on first write. See stylobot's
+`SINK_COORDINATOR_ARCHITECTURE.md` for the target end-to-end shape.
+
 ## [2.6.1] - 2026-05-14
 
 ### Changed
