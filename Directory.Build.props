@@ -12,5 +12,13 @@
     <PackageProjectUrl>https://github.com/scottgal/styloflow</PackageProjectUrl>
     <RepositoryUrl>https://github.com/scottgal/styloflow.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+
+    <!-- CA code-quality analyzers stay at warning (see the root .editorconfig) and
+         are never promoted to build-breaking errors. SDK 10.0.201 escalates a batch
+         of CA rules to error by default; this + the .editorconfig restore the warning
+         posture so a clean build (and the commercial Maxo/CI build that references
+         StyloFlow.Core by source) succeeds without -p:RunAnalyzers=false. Mirrors the
+         FOSS stylobot PR #64. -->
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
 </Project>

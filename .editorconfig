@@ -1,0 +1,27 @@
+# EditorConfig for the styloflow solution.
+# https://editorconfig.org
+#
+# Mirrors the FOSS stylobot .editorconfig (PR #64): SDK 10.0.201 escalates this
+# batch of .NET code-quality (CA) analyzer rules to ERROR severity by default,
+# which breaks a clean build here and in the commercial Maxo/CI image build (which
+# references StyloFlow.Core by source). These are style/perf/design preferences,
+# not defects, so they stay at warning — the analyzers still run and surface, they
+# just don't break the build.
+
+root = true
+
+[*.cs]
+dotnet_diagnostic.CA1805.severity = warning   # member explicitly initialised to default
+dotnet_diagnostic.CA1813.severity = warning   # avoid unsealed attributes
+dotnet_diagnostic.CA1822.severity = warning   # member can be marked static
+dotnet_diagnostic.CA1823.severity = warning   # unused private field
+dotnet_diagnostic.CA1826.severity = warning   # use property instead of Enumerable method
+dotnet_diagnostic.CA1847.severity = warning   # use char overload of string.Contains
+dotnet_diagnostic.CA1850.severity = warning   # prefer static SHA*.HashData
+dotnet_diagnostic.CA1853.severity = warning   # unnecessary ContainsKey before indexer
+dotnet_diagnostic.CA1854.severity = warning   # prefer TryGetValue over ContainsKey + indexer
+dotnet_diagnostic.CA1860.severity = warning   # prefer Count/Length over Any()
+dotnet_diagnostic.CA1861.severity = warning   # avoid constant arrays as arguments
+dotnet_diagnostic.CA1866.severity = warning   # use char overload of string.StartsWith/EndsWith
+dotnet_diagnostic.CA1869.severity = warning   # cache and reuse JsonSerializerOptions
+dotnet_diagnostic.CA2254.severity = warning   # logging template should be a static expression
