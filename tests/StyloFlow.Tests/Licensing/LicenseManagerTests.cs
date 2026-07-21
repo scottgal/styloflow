@@ -233,6 +233,33 @@ public class LicenseManagerTests
     }
 
     [Fact]
+    public async Task ValidateLicense_LicenseExpiresBetweenValidations_ClearsStaleFeatureData()
+    {
+        // A long-running process calling ValidateLicenseAsync periodically (e.g. a schedule-
+        // coordinator tick) must have HasFeature/CurrentTier/EnabledFeatures go stale-free the
+        // moment a license expires, not keep granting access from the last-valid validation.
+        var options = new StyloFlowOptions
+        {
+            LicenseToken = CreateLicenseJson(
+                "professional",
+                features: new[] { "stylobot.policies.edit" },
+                expiry: DateTimeOffset.UtcNow.AddMilliseconds(50))
+        };
+        var manager = new LicenseManager(options, NullLogger<LicenseManager>.Instance);
+
+        await manager.ValidateLicenseAsync();
+        Assert.True(manager.HasFeature("stylobot.policies.edit"));
+
+        await Task.Delay(100);
+        await manager.ValidateLicenseAsync();
+
+        Assert.Equal(LicenseState.Expired, manager.CurrentState);
+        Assert.False(manager.HasFeature("stylobot.policies.edit"));
+        Assert.Equal("free", manager.CurrentTier);
+        Assert.Null(manager.CurrentLicense);
+    }
+
+    [Fact]
     public async Task ValidateLicense_CustomValidator_IsUsed()
     {
         // Arrange

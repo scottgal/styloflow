@@ -243,6 +243,16 @@ public sealed class LicenseManager : ILicenseManager
         var previousState = _state;
         _state = newState;
 
+        // Leaving a licensed state MUST clear the cached license -- otherwise the feature/tier
+        // gates (EnabledFeatures / HasFeature / CurrentTier / CurrentLicense) stay pinned to the
+        // last-valid license forever, so expiry/invalidation never actually freezes licensed
+        // features even when re-validation runs. The success path re-assigns _license before
+        // calling SetState(Valid/ExpiringSoon), so this only clears on Expired/Invalid/FreeTier.
+        if (newState != LicenseState.Valid && newState != LicenseState.ExpiringSoon)
+        {
+            _license = null;
+        }
+
         if (previousState != newState)
         {
             var evt = new LicenseStateChangedEvent
